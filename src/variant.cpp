@@ -1353,6 +1353,7 @@ namespace {
     Variant* xiangqi_variant() {
         Variant* v = xiangqi_variant_base()->init();
         v->chasingRule = AXF_CHASING;
+        v->nMoveRule = 0;
         return v;
     }
     // Manchu/Yitong chess

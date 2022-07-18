@@ -343,28 +343,16 @@ void UCI::loop(int argc, char* argv[]) {
       else if (token == "ponderhit")
           Threads.main()->ponder = false; // Switch to normal search
 
-      else if (token == "uci" || token == "usi" || token == "ucci" || token == "xboard")
+      else if (token == "uci" || token == "ucinewgame")
       {
-          CurrentProtocol =  token == "uci"  ? UCI_GENERAL
-                           : token == "usi"  ? USI
-                           : token == "ucci" ? UCCI
-                           : XBOARD;
-          string defaultVariant = string(
-#ifdef LARGEBOARDS
-                                           CurrentProtocol == USI  ? "shogi"
-                                         : CurrentProtocol == UCCI ? "xiangqi"
-#else
-                                           CurrentProtocol == USI  ? "minishogi"
-                                         : CurrentProtocol == UCCI ? "minixiangqi"
-#endif
-                                                           : "chess");
-          Options["UCI_Variant"].set_default(defaultVariant);
+          Options["UCI_Variant"].set_default("xiangqi");
           std::istringstream ss("startpos");
           position(pos, ss, states);
-          if (is_uci_dialect(CurrentProtocol))
+          if (token == "uci" and is_uci_dialect(CurrentProtocol))
               sync_cout << "id name " << engine_info(true)
                           << "\n" << Options
                           << "\n" << token << "ok"  << sync_endl;
+          Search::clear();
       }
 
       else if (CurrentProtocol == XBOARD)
@@ -377,7 +365,6 @@ void UCI::loop(int argc, char* argv[]) {
               banmoves.push_back(UCI::to_move(pos, token));
       else if (token == "go")         go(pos, is, states, banmoves);
       else if (token == "position")   position(pos, is, states), banmoves.clear();
-      else if (token == "ucinewgame" || token == "usinewgame" || token == "uccinewgame") Search::clear();
       else if (token == "isready")    sync_cout << "readyok" << sync_endl;
 
       // Additional custom non-UCI commands, mainly for debugging.
@@ -598,6 +585,6 @@ bool UCI::is_valid_option(UCI::OptionsMap& options, std::string& name) {
   return false;
 }
 
-Protocol CurrentProtocol = UCI_GENERAL; // Global object
+Protocol CurrentProtocol = UCI_CYCLONE; // Global object
 
 } // namespace Stockfish
