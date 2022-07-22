@@ -155,7 +155,7 @@ namespace {
 void Search::init() {
 
   for (int i = 1; i < MAX_MOVES; ++i)
-      Reductions[i] = int(21.9 * std::log(i));
+      Reductions[i] = int((20.81 + std::log(Threads.size()) / 2) * std::log(i));
 }
 
 
@@ -254,6 +254,10 @@ void MainThread::search() {
       bestThread = Threads.get_best_thread();
 
   bestPreviousScore = bestThread->rootMoves[0].score;
+  bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
+
+  for (Thread* th : Threads)
+    th->previousDepth = bestThread->completedDepth;
 
   // Send again PV info if we have a new best thread
   if (bestThread != this)
@@ -314,7 +318,7 @@ void Thread::search() {
   // The latter is needed for statScore and killer initialization.
   Stack stack[MAX_PLY+10], *ss = stack+7;
   Move  pv[MAX_PLY+1];
-  Value bestValue, alpha, beta, delta;
+  Value alpha, beta, delta;
   Move  lastBestMove = MOVE_NONE;
   Depth lastBestMoveDepth = 0;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
@@ -373,7 +377,11 @@ void Thread::search() {
   multiPV = std::min(multiPV, rootMoves.size());
   ttHitAverage = TtHitAverageWindow * TtHitAverageResolution / 2;
 
+  complexityAverage.set(174, 1);
+
   trend = SCORE_ZERO;
+  optimism[ us] = Value(39);
+  optimism[~us] = -optimism[us];
 
   int searchAgainCounter = 0;
 
@@ -414,16 +422,20 @@ void Thread::search() {
           // Reset aspiration window starting size
           if (rootDepth >= 4)
           {
-              Value prev = rootMoves[pvIdx].previousScore;
-              delta = Value(17 * (1 + rootPos.captures_to_hand()));
+              Value prev = rootMoves[pvIdx].averageScore;
+              delta = Value(16) + int(prev) * prev / 19178;
               alpha = std::max(prev - delta,-VALUE_INFINITE);
               beta  = std::min(prev + delta, VALUE_INFINITE);
 
               // Adjust trend based on root move's previousScore (dynamic contempt)
-              int tr = 113 * prev / (abs(prev) + 147);
-
+              int tr = sigmoid(prev, 3, 8, 90, 125, 1);
               trend = (us == WHITE ?  make_score(tr, tr / 2)
                                    : -make_score(tr, tr / 2));
+
+            
+              int opt = sigmoid(prev, 8, 17, 144, 13966, 183);
+              optimism[ us] = Value(opt);
+              optimism[~us] = -optimism[us];
           }
 
           // Start with a small aspiration window and, in the case of a fail
@@ -432,7 +444,9 @@ void Thread::search() {
           int failedHighCnt = 0;
           while (true)
           {
-              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - searchAgainCounter);
+              // Adjust the effective depth searched, but ensuring at least one effective increment for every
+              // four searchAgain steps (see issue #2717).
+              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -476,7 +490,7 @@ void Thread::search() {
               else
                   break;
 
-              delta += delta / 4 + 5;
+              delta += delta / 4 + 2;
 
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
@@ -510,28 +524,30 @@ void Thread::search() {
       if (skill.enabled() && skill.time_to_pick(rootDepth))
           skill.pick_best(multiPV);
 
+      // Use part of the gained time from a previous stable move for the current move
+      for (Thread* th : Threads)
+      {
+          totBestMoveChanges += th->bestMoveChanges;
+          th->bestMoveChanges = 0;
+      }
+
       // Do we have time for the next iteration? Can we stop searching now?
       if (    Limits.use_time_management()
           && !Threads.stop
           && !mainThread->stopOnPonderhit)
       {
-          double fallingEval = (318 + 6 * (mainThread->bestPreviousScore - bestValue)
-                                    + 6 * (mainThread->iterValue[iterIdx] - bestValue)) / 825.0;
+          double fallingEval = (69 + 12 * (mainThread->bestPreviousAverageScore - bestValue)
+                                    +  6 * (mainThread->iterValue[iterIdx] - bestValue)) / 781.4;
           fallingEval = std::clamp(fallingEval, 0.5, 1.5);
 
           // If the bestMove is stable over several iterations, reduce time accordingly
-          timeReduction = lastBestMoveDepth + 9 < completedDepth ? 1.92 : 0.95;
-          double reduction = (1.47 + mainThread->previousTimeReduction) / (2.32 * timeReduction);
+          timeReduction = lastBestMoveDepth + 10 < completedDepth ? 1.63 : 0.73;
+          double reduction = (1.56 + mainThread->previousTimeReduction) / (2.20 * timeReduction);
+          double bestMoveInstability = 1 + 1.7 * totBestMoveChanges / Threads.size();
+          int complexity = mainThread->complexityAverage.value();
+          double complexPosition = std::min(1.0 + (complexity - 277) / 1819.1, 1.5);
 
-          // Use part of the gained time from a previous stable move for the current move
-          for (Thread* th : Threads)
-          {
-              totBestMoveChanges += th->bestMoveChanges;
-              th->bestMoveChanges = 0;
-          }
-          double bestMoveInstability = 1.073 + std::max(1.0, 2.25 - 9.9 / rootDepth)
-                                              * totBestMoveChanges / Threads.size();
-          double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability;
+          double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
 
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
           // yielding correct scores and sufficiently fast moves.
@@ -617,7 +633,7 @@ void Thread::search() {
           }
           else if (   Threads.increaseDepth
                    && !mainThread->ponder
-                   && Time.elapsed() > totalTime * 0.58)
+                   && Time.elapsed() > totalTime * 0.43)
                    Threads.increaseDepth = false;
           else
                    Threads.increaseDepth = true;
@@ -684,10 +700,11 @@ namespace {
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
          ttCapture;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount, improvement;
+    int moveCount, captureCount, quietCount, improvement, complexity;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
+    thisThread->depth  = depth;
     ss->inCheck        = pos.checkers();
     priorCapture       = pos.captured_piece();
     Color us           = pos.side_to_move();
@@ -868,6 +885,7 @@ namespace {
         ss->staticEval = eval = VALUE_NONE;
         improving = false;
         improvement = 0;
+        complexity = 0;
         goto moves_loop;
     }
     else if (ss->ttHit)
@@ -875,7 +893,9 @@ namespace {
         // Never assume anything about values stored in TT
         ss->staticEval = eval = tte->eval();
         if (eval == VALUE_NONE)
-            ss->staticEval = eval = evaluate(pos);
+            ss->staticEval = eval = evaluate(pos, &complexity);
+        else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
+            complexity = abs(ss->staticEval - pos.psq_eg_stm());
 
         // Randomize draw evaluation
         if (eval == VALUE_DRAW)
@@ -888,16 +908,14 @@ namespace {
     }
     else
     {
-        // In case of null move search use previous static eval with a different sign
-        // and addition of two tempos
-        if ((ss-1)->currentMove != MOVE_NULL)
-            ss->staticEval = eval = evaluate(pos);
-        else
-            ss->staticEval = eval = -(ss-1)->staticEval;
+        ss->staticEval = eval = evaluate(pos, &complexity);
 
         // Save static evaluation into transposition table
-        tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
+        if (!excludedMove)
+            tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
+
+    thisThread->complexityAverage.update(complexity);
 
     // Use static evaluation difference to improve quiet move ordering
     if (is_ok((ss-1)->currentMove) && !(ss-1)->inCheck && !priorCapture)
@@ -939,24 +957,22 @@ namespace {
         &&  eval < 26305) // larger than VALUE_KNOWN_WIN, but smaller than TB wins.
         return eval;
 
-    // Step 9. Null move search with verification search (~40 Elo)
+    // Step 9. Null move search with verification search (~22 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 23767
+        && (ss-1)->statScore < 14695
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 20 * depth - 22 * improving + 168 * ss->ttPv + 159 + 200 * (!pos.double_step_enabled() && pos.piece_to_char()[PAWN] != ' ')
+        &&  ss->staticEval >= beta - 15 * depth - improvement / 15 + 201 + complexity / 24
         && !excludedMove
         &&  pos.non_pawn_material(us)
-        &&  pos.count<ALL_PIECES>(~us) != pos.count<PAWN>(~us)
-        && !pos.flip_enclosed_pieces()
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
         assert(eval - beta >= 0);
 
-        // Null move dynamic reduction based on depth and value
-        Depth R = (1090 - 300 * pos.must_capture() - 250 * !pos.checking_permitted() + 81 * depth) / 256 + std::min(int(eval - beta) / 205, pos.must_capture() || pos.blast_on_capture() ? 0 : 3);
-
+        // Null move dynamic reduction based on depth, eval and complexity of position
+        Depth R = std::min(int(eval - beta) / 147, 5) + depth / 3 + 4 - (complexity > 650);
+        
         ss->currentMove = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
@@ -1156,7 +1172,7 @@ moves_loop: // When in check, search starts from here
 
       // Step 14. Pruning at shallow depth (~200 Elo)
       if (  !rootNode
-          && (pos.non_pawn_material(us) || pos.count<ALL_PIECES>(us) == pos.count<PAWN>(us))
+          && pos.non_pawn_material(us)
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold (~7 Elo)
@@ -1164,10 +1180,6 @@ moves_loop: // When in check, search starts from here
 
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount, delta, thisThread->rootDelta), 0);
-
-          if (pos.must_capture() && pos.attackers_to(to_sq(move), ~us))
-          {}
-          else
 
           if (   captureOrPromotion
               || givesCheck)
@@ -1218,15 +1230,15 @@ moves_loop: // When in check, search starts from here
       // then that move is singular and should be extended. To verify this we do
       // a reduced search on all the other moves but the ttMove and if the
       // result is lower than ttValue minus a margin, then we will extend the ttMove.
-      if (   !rootNode
-          &&  depth >= 7 - 2 * (pos.count<KING>() == 1)
-          &&  move == ttMove
-          && !excludedMove // Avoid recursive singular search
-       /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
-          &&  abs(ttValue) < VALUE_KNOWN_WIN
-          && (tte->bound() & BOUND_LOWER)
-          &&  tte->depth() >= depth - 3)
-      {
+          if (   !rootNode
+              &&  depth >= 4 - (thisThread->previousDepth > 27) + 2 * (PvNode && tte->is_pv())
+              &&  move == ttMove
+              && !excludedMove // Avoid recursive singular search
+           /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
+              &&  abs(ttValue) < VALUE_KNOWN_WIN
+              && (tte->bound() & BOUND_LOWER)
+              &&  tte->depth() >= depth - 3)
+          {
           Value singularBeta = ttValue - 3 * depth;
           Depth singularDepth = (depth - 1) / 2;
 
@@ -1401,6 +1413,8 @@ moves_loop: // When in check, search starts from here
       {
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
+
+          rm.averageScore = rm.averageScore != -VALUE_INFINITE ? (2 * value + rm.averageScore) / 3 : value;
 
           // PV move or new best move?
           if (moveCount == 1 || value > alpha)

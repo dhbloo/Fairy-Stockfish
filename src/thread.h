@@ -60,15 +60,17 @@ public:
   Pawns::Table pawnsTable;
   Material::Table materialTable;
   size_t pvIdx, pvLast;
+  RunningAverage complexityAverage;
   uint64_t ttHitAverage;
   int selDepth, nmpMinPly;
   Color nmpColor;
+  Value bestValue, optimism[COLOR_NB];
   std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
 
   Position rootPos;
   StateInfo rootState;
   Search::RootMoves rootMoves;
-  Depth rootDepth, completedDepth;
+  Depth rootDepth, completedDepth, depth, previousDepth;
   Value rootDelta;
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
@@ -90,6 +92,7 @@ struct MainThread : public Thread {
 
   double previousTimeReduction;
   Value bestPreviousScore;
+  Value bestPreviousAverageScore;
   Value iterValue[4];
   int callsCnt;
   bool stopOnPonderhit;

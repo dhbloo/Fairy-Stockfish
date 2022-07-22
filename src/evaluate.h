@@ -33,7 +33,7 @@ class Position;
 namespace Eval {
 
   std::string trace(Position& pos);
-  Value evaluate(const Position& pos);
+  Value evaluate(const Position& pos, int* complexity = nullptr);
 
   extern bool useNNUE;
   extern std::string eval_file_loaded;
@@ -46,7 +46,7 @@ namespace Eval {
   namespace NNUE {
 
     std::string trace(Position& pos);
-    Value evaluate(const Position& pos, bool adjusted = false);
+    Value evaluate(const Position& pos, bool adjusted = false, int* complexity = nullptr);
 
     void init();
     void verify();
