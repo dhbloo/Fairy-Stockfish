@@ -182,7 +182,7 @@ void MainThread::search() {
   }
 
   Color us = rootPos.side_to_move();
-  Time.init(rootPos, Limits, us, rootPos.game_ply());
+  Time.init(Limits, us, rootPos.game_ply());
   TT.new_search();
 
   Eval::NNUE::verify();
@@ -373,8 +373,6 @@ void Thread::search() {
   complexityAverage.set(174, 1);
 
   trend = SCORE_ZERO;
-  optimism[ us] = Value(39);
-  optimism[~us] = -optimism[us];
 
   int searchAgainCounter = 0;
 
@@ -424,11 +422,6 @@ void Thread::search() {
               int tr = sigmoid(prev, 3, 8, 90, 125, 1);
               trend = (us == WHITE ?  make_score(tr, tr / 2)
                                    : -make_score(tr, tr / 2));
-
-            
-              int opt = sigmoid(prev, 8, 17, 144, 13966, 183);
-              optimism[ us] = Value(opt);
-              optimism[~us] = -optimism[us];
           }
 
           // Start with a small aspiration window and, in the case of a fail
@@ -1014,7 +1007,7 @@ namespace {
 
                 ss->currentMove = move;
                 ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
-                                                                          [captureOrPromotion]
+                                                                          [true]
                                                                           [history_slot(pos.moved_piece(move))]
                                                                           [to_sq(move)];
 
@@ -1813,19 +1806,18 @@ moves_loop: // When in check, search starts from here
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
                         Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth) {
 
-    int bonus1, bonus2;
     Color us = pos.side_to_move();
     Thread* thisThread = pos.this_thread();
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
     Piece moved_piece = pos.moved_piece(bestMove);
     PieceType captured = type_of(pos.piece_on(to_sq(bestMove)));
-
-    bonus1 = stat_bonus(depth + 1);
-    bonus2 = bestValue > beta + PawnValueMg ? bonus1                                 // larger bonus
-                                            : std::min(bonus1, stat_bonus(depth));   // smaller bonus
+    int bonus1 = stat_bonus(depth + 1);
 
     if (!pos.capture_or_promotion(bestMove))
     {
+        int bonus2 = bestValue > beta + PawnValueMg ? bonus1               // larger bonus
+                                                    : stat_bonus(depth);   // smaller bonus
+
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bonus2);
 

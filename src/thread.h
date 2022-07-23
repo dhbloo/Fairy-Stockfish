@@ -63,7 +63,7 @@ public:
   RunningAverage complexityAverage;
   int selDepth, nmpMinPly;
   Color nmpColor;
-  Value bestValue, optimism[COLOR_NB];
+  Value bestValue;
   std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
 
   Position rootPos;

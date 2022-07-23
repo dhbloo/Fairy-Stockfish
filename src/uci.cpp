@@ -78,6 +78,14 @@ namespace {
     }
   }
 
+  // uci() is called when engine receives the "uci" or "ucinewgame" command.
+  void uci(Position& pos, StateListPtr& states) {
+          Options["UCI_Variant"].set_default("xiangqi");
+          std::istringstream ss("startpos");
+          position(pos, ss, states);
+          Search::clear();
+  }
+
   // trace_eval() prints the evaluation for the current position, consistent with the UCI
   // options set so far.
 
@@ -207,7 +215,7 @@ namespace {
         }
         else if (token == "setoption")  setoption(is);
         else if (token == "position")   position(pos, is, states);
-        else if (token == "ucinewgame") { Search::clear(); elapsed = now(); } // Search::clear() may take some while
+        else if (token == "ucinewgame") uci(pos, states); // Search::clear() may take some while
     }
 
     elapsed = now() - elapsed + 1; // Ensure positivity to avoid a 'divide by zero'
@@ -345,14 +353,11 @@ void UCI::loop(int argc, char* argv[]) {
 
       else if (token == "uci" || token == "ucinewgame")
       {
-          Options["UCI_Variant"].set_default("xiangqi");
-          std::istringstream ss("startpos");
-          position(pos, ss, states);
+          uci(pos, states);
           if (token == "uci" and is_uci_dialect(CurrentProtocol))
               sync_cout << "id name " << engine_info(true)
                           << "\n" << Options
                           << "\n" << token << "ok"  << sync_endl;
-          Search::clear();
       }
 
       else if (CurrentProtocol == XBOARD)

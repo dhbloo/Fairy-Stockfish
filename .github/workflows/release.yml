@@ -10,7 +10,7 @@ jobs:
   windows:
     strategy:
       matrix:
-        arch: ["x86-64-vnni512", "x86-64-bmi2", "x86-64-modern"]
+        arch: ["x86-64-vnni512", "x86-64-bmi2", "x86-64-modern", "x86-64"]
     runs-on: windows-2022
 
     steps:
@@ -22,4 +22,4 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: fairy-stockfish
-          path: src/x86-64-*.exe
+          path: src/x86-64*.exe
