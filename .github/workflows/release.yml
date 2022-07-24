@@ -11,13 +11,16 @@ jobs:
     strategy:
       matrix:
         arch: ["x86-64-vnni512", "x86-64-bmi2", "x86-64-modern", "x86-64"]
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: make largeboards
+      - name: make
         run: cd src && make clean && make -j build COMP=mingw ARCH=${{ matrix.arch }} EXE=${{ matrix.arch }}.exe largeboards=yes && strip ${{ matrix.arch }}.exe
+
+      - name: make big NNUE
+        run: cd src && make clean && make -j build COMP=mingw ARCH=${{ matrix.arch }} EXE=${{ matrix.arch }}-big.exe largeboards=yes big_nnue=yes && strip ${{ matrix.arch }}-big.exe
 
       - uses: actions/upload-artifact@v3
         with:
