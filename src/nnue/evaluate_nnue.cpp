@@ -166,7 +166,12 @@ namespace Stockfish::Eval::NNUE {
 
     if (complexity) *complexity = abs(psqt - positional) / OutputScale;
 
+#ifdef BIG_NNUE
+    int delta = 24 - pos.non_pawn_material() / 9560;
+    return static_cast<Value>(((1024 - delta) * psqt + (1024 + delta) * positional) / (1024 * OutputScale));
+#else
     return static_cast<Value>((psqt + positional) / OutputScale);
+#endif
   }
 
   struct NnueEvalTrace {

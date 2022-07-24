@@ -1521,8 +1521,42 @@ make_v:
 
 Value Eval::evaluate(const Position& pos, int* complexity) {
 
-  Value v = NNUE::evaluate(pos, complexity);
+#ifdef BIG_NNUE
+  Value v;
+  Color stm = pos.side_to_move();
+  Value psq = pos.psq_eg_stm();
+  // Deciding between classical and NNUE eval (~10 Elo): for high PSQ imbalance we use classical,
+  // but we switch to NNUE during long shuffling or with high material on the board.
+  bool useClassical =    (pos.this_thread()->depth > 9 || pos.count<ALL_PIECES>() > 7)
+                      && abs(psq) * 5 > (856 + pos.non_pawn_material() / 64) * (10 + pos.rule50_count());
 
+  // Deciding between classical and NNUE eval (~10 Elo): for high PSQ imbalance we use classical,
+  // but we switch to NNUE during long shuffling or with high material on the board.
+  if (!Eval::useNNUE || useClassical)
+  {
+      v = Evaluation<NO_TRACE>(pos).value();
+      useClassical = abs(v) >= 297;
+  }
+
+  // If result of a classical evaluation is much lower than threshold fall back to NNUE
+  if (Eval::useNNUE && !useClassical)
+  {
+       int nnueComplexity;
+       int scale = 1064 + 106 * pos.non_pawn_material() / 5120;
+       Value optimism = pos.this_thread()->optimism[stm];
+
+       Value nnue = NNUE::evaluate(pos, &nnueComplexity);
+       // Blend nnue complexity with (semi)classical complexity
+       nnueComplexity = (104 * nnueComplexity + 131 * abs(nnue - psq)) / 256;
+       if (complexity) // Return hybrid NNUE complexity to caller
+           *complexity = nnueComplexity;
+
+       optimism = optimism * (269 + nnueComplexity) / 256;
+       v = (nnue * scale + optimism * (scale - 754)) / 1024;
+  }
+#else
+  Value v = NNUE::evaluate(pos, complexity);
+#endif
   // Guarantee evaluation does not hit the tablebase range
   v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 

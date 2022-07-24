@@ -373,6 +373,10 @@ void Thread::search() {
   complexityAverage.set(174, 1);
 
   trend = SCORE_ZERO;
+#ifdef BIG_NNUE
+  optimism[ us] = Value(39);
+  optimism[~us] = -optimism[us];
+#endif
 
   int searchAgainCounter = 0;
 
@@ -422,6 +426,12 @@ void Thread::search() {
               int tr = sigmoid(prev, 3, 8, 90, 125, 1);
               trend = (us == WHITE ?  make_score(tr, tr / 2)
                                    : -make_score(tr, tr / 2));
+
+#ifdef BIG_NNUE
+              int opt = sigmoid(prev, 8, 17, 144, 13966, 183);
+              optimism[ us] = Value(opt);
+              optimism[~us] = -optimism[us];
+#endif
           }
 
           // Start with a small aspiration window and, in the case of a fail
@@ -1286,7 +1296,7 @@ moves_loop: // When in check, search starts from here
               r--;
 
           // Increase reduction for cut nodes (~3 Elo)
-          if (cutNode && move != ss->killers[0])
+          if (cutNode)
               r += 2;
 
           // Increase reduction if ttMove is a capture (~3 Elo)

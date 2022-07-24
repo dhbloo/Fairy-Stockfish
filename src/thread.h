@@ -64,6 +64,9 @@ public:
   int selDepth, nmpMinPly;
   Color nmpColor;
   Value bestValue;
+#ifdef BIG_NNUE
+  Value optimism[COLOR_NB];
+#endif
   std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
 
   Position rootPos;
