@@ -142,6 +142,7 @@ namespace Stockfish::Eval::NNUE {
     // We manually align the arrays on the stack because with gcc < 9.3
     // overaligning stack variables with alignas() doesn't work correctly.
 
+    int delta = 24 - pos.non_pawn_material() / 9560;
     constexpr uint64_t alignment = CacheLineSize;
 
 #if defined(ALIGNAS_ON_STACK_VARIABLES_BROKEN)
@@ -166,12 +167,7 @@ namespace Stockfish::Eval::NNUE {
 
     if (complexity) *complexity = abs(psqt - positional) / OutputScale;
 
-#ifdef BIG_NNUE
-    int delta = 24 - pos.non_pawn_material() / 9560;
     return static_cast<Value>(((1024 - delta) * psqt + (1024 + delta) * positional) / (1024 * OutputScale));
-#else
-    return static_cast<Value>((psqt + positional) / OutputScale);
-#endif
   }
 
   struct NnueEvalTrace {

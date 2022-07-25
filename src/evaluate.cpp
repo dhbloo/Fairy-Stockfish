@@ -1521,7 +1521,6 @@ make_v:
 
 Value Eval::evaluate(const Position& pos, int* complexity) {
 
-#ifdef BIG_NNUE
   Value v;
   Color stm = pos.side_to_move();
   Value psq = pos.psq_eg_stm();
@@ -1554,11 +1553,12 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
        optimism = optimism * (269 + nnueComplexity) / 256;
        v = (nnue * scale + optimism * (scale - 754)) / 1024;
   }
-#else
-  Value v = NNUE::evaluate(pos, complexity);
-#endif
+
   // Guarantee evaluation does not hit the tablebase range
   v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
+
+  // When not using NNUE, return classical complexity to caller
+  if (complexity && (!useNNUE || useClassical)) *complexity = abs(v - psq);
 
   return v;
 }
