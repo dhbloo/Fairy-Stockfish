@@ -102,15 +102,9 @@ extern UCI::OptionsMap Options;
 
 enum Protocol {
   UCI_GENERAL,
-  USI,
-  UCCI,
   UCI_CYCLONE,
   XBOARD,
 };
-
-constexpr bool is_uci_dialect(Protocol p) {
-  return p != XBOARD;
-}
 
 extern Protocol CurrentProtocol;
 

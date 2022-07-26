@@ -187,23 +187,13 @@ void MainThread::search() {
 
   Eval::NNUE::verify();
 
-  if (rootMoves.empty() || (CurrentProtocol == XBOARD && rootPos.is_optional_game_end()))
+  if (rootMoves.empty())
   {
       rootMoves.emplace_back(MOVE_NONE);
       Value variantResult;
       Value result =  rootPos.is_game_end(variantResult) ? variantResult
                     : rootPos.checkers()                 ? rootPos.checkmate_value()
                                                          : rootPos.stalemate_value();
-      if (CurrentProtocol == XBOARD)
-      {
-          // rotate MOVE_NONE to front (for optional game end)
-          std::rotate(rootMoves.rbegin(), rootMoves.rbegin() + 1, rootMoves.rend());
-          sync_cout << (  result == VALUE_DRAW ? "1/2-1/2 {Draw}"
-                        : (rootPos.side_to_move() == BLACK ? -result : result) == VALUE_MATE ? "1-0 {White wins}"
-                        : "0-1 {Black wins}")
-                    << sync_endl;
-      }
-      else
       sync_cout << "info depth 0 score "
                 << UCI::value(result)
                 << sync_endl;
@@ -213,14 +203,6 @@ void MainThread::search() {
       Threads.start_searching(); // start non-main threads
       Thread::search();          // main thread start searching
   }
-
-  // Sit in bughouse variants if partner requested it or we are dead
-  if (rootPos.two_boards() && !Threads.abort && CurrentProtocol == XBOARD)
-  {
-      while (!Threads.stop && (Partner.sitRequested || (Partner.weDead && !Partner.partnerDead)) && Time.elapsed() < Limits.time[us] - 1000)
-      {}
-  }
-
   // When we reach the maximum depth, we can arrive here without a raise of
   // Threads.stop. However, if we are pondering or in an infinite search,
   // the UCI protocol states that we shouldn't print the best move before the
@@ -258,40 +240,6 @@ void MainThread::search() {
   // Send again PV info if we have a new best thread
   if (bestThread != this)
       sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
-
-  if (CurrentProtocol == XBOARD)
-  {
-      Move bestMove = bestThread->rootMoves[0].pv[0];
-      // Wait for virtual drop to become real
-      if (rootPos.two_boards() && rootPos.virtual_drop(bestMove))
-      {
-          Partner.ptell("fast");
-          while (!Threads.abort && !Partner.partnerDead && !Partner.fast && Limits.time[us] - Time.elapsed() > Partner.opptime)
-          {}
-          Partner.ptell("x");
-          // Find best real move
-          for (const auto& m : this->rootMoves)
-              if (!rootPos.virtual_drop(m.pv[0]))
-              {
-                  bestMove = m.pv[0];
-                  break;
-              }
-      }
-      // Send move only when not in analyze mode and not at game end
-      if (!Limits.infinite && !ponder && rootMoves[0].pv[0] != MOVE_NONE && !Threads.abort.exchange(true))
-      {
-          sync_cout << "move " << UCI::move(rootPos, bestMove) << sync_endl;
-          if (XBoard::stateMachine->moveAfterSearch)
-          {
-              XBoard::stateMachine->do_move(bestMove);
-              XBoard::stateMachine->moveAfterSearch = false;
-              if (Options["Ponder"] && (   bestThread->rootMoves[0].pv.size() > 1
-                                        || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos)))
-                  XBoard::stateMachine->ponderMove = bestThread->rootMoves[0].pv[1];
-          }
-      }
-      return;
-  }
 
   sync_cout << "bestmove " << UCI::move(rootPos, bestThread->rootMoves[0].pv[0]);
 
@@ -520,73 +468,6 @@ void Thread::search() {
           if (rootMoves.size() == 1)
               totalTime = std::min(500.0, totalTime);
 
-          // Update partner in bughouse variants
-          if (completedDepth >= 8 && rootPos.two_boards() && CurrentProtocol == XBOARD)
-          {
-              // Communicate clock times relevant for sitting decisions
-              if (Limits.time[us])
-                  Partner.ptell<FAIRY>("time " + std::to_string((Limits.time[us] - Time.elapsed()) / 10));
-              if (Limits.time[~us])
-                  Partner.ptell<FAIRY>("otim " + std::to_string(Limits.time[~us] / 10));
-              // We are dead and need to sit
-              if (!Partner.weDead && bestValue <= VALUE_MATED_IN_MAX_PLY)
-              {
-                  Partner.ptell("dead");
-                  Partner.weDead = true;
-              }
-              // We were dead but are fine again
-              else if (Partner.weDead && bestValue > VALUE_MATED_IN_MAX_PLY)
-              {
-                  Partner.ptell("x");
-                  Partner.weDead = false;
-              }
-              // We win by force, so partner should sit
-              else if (!Partner.weWin && bestValue >= VALUE_MATE_IN_MAX_PLY && Limits.time[~us] < Partner.time)
-              {
-                  Partner.ptell("sit");
-                  Partner.weWin = true;
-              }
-              // We are no longer winning
-              else if (Partner.weWin && (bestValue < VALUE_MATE_IN_MAX_PLY || Limits.time[~us] > Partner.time))
-              {
-                  Partner.ptell("x");
-                  Partner.weWin = false;
-              }
-              // We can win if partner delivers required material quickly
-              else if (  !Partner.weVirtualWin
-                       && bestValue >= VALUE_VIRTUAL_MATE_IN_MAX_PLY
-                       && bestValue <= VALUE_VIRTUAL_MATE
-                       && Limits.time[us] - Time.elapsed() > Partner.opptime)
-              {
-                  Partner.ptell("fast");
-                  Partner.weVirtualWin = true;
-              }
-              // Virtual mate is gone
-              else if (   Partner.weVirtualWin
-                       && (bestValue < VALUE_VIRTUAL_MATE_IN_MAX_PLY || bestValue > VALUE_VIRTUAL_MATE || Limits.time[us] - Time.elapsed() < Partner.opptime))
-              {
-                  Partner.ptell("slow");
-                  Partner.weVirtualWin = false;
-              }
-              // We need to survive a virtual mate and play fast
-              else if (  !Partner.weVirtualLoss
-                       && (bestValue <= -VALUE_VIRTUAL_MATE_IN_MAX_PLY && bestValue >= -VALUE_VIRTUAL_MATE)
-                       && Limits.time[~us] > Partner.time)
-              {
-                  Partner.ptell("sit");
-                  Partner.weVirtualLoss = true;
-                  Partner.fast = true;
-              }
-              // Virtual mate threat is over
-              else if (   Partner.weVirtualLoss
-                       && (bestValue > -VALUE_VIRTUAL_MATE_IN_MAX_PLY || bestValue < -VALUE_VIRTUAL_MATE || Limits.time[~us] < Partner.time))
-              {
-                  Partner.ptell("x");
-                  Partner.weVirtualLoss = false;
-                  Partner.fast = false;
-              }
-          }
-
           // Stop the search if we have exceeded the totalTime
           if (Time.elapsed() > totalTime)
           {
@@ -594,7 +475,7 @@ void Thread::search() {
               // keep pondering until the GUI sends "ponderhit" or "stop".
               if (mainThread->ponder)
                   mainThread->stopOnPonderhit = true;
-              else if (!(rootPos.two_boards() && (Partner.sitRequested || Partner.weDead)))
+              else
                   Threads.stop = true;
           }
           else if (   Threads.increaseDepth
@@ -896,7 +777,7 @@ namespace {
     }
 
     // Step 8. Futility pruning: child node (~50 Elo)
-    if (   !PvNode
+    if (   !ss->ttPv
         &&  depth < 8
         &&  eval - futility_margin(depth, improving) - (ss-1)->statScore / 256 >= beta
         &&  eval >= beta
@@ -1082,7 +963,7 @@ moves_loop: // When in check, search starts from here
 
       ss->moveCount = ++moveCount;
 
-      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000 && is_uci_dialect(CurrentProtocol))
+      if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
           sync_cout << "info depth " << depth
                     << " currmove " << UCI::move(pos, move)
                     << " currmovenumber " << moveCount + thisThread->pvIdx << sync_endl;
@@ -1892,11 +1773,6 @@ void MainThread::check_time() {
   if (ponder)
       return;
 
-  if (   rootPos.two_boards()
-      && Time.elapsed() < Limits.time[rootPos.side_to_move()] - 1000
-      && (Partner.sitRequested || (Partner.weDead && !Partner.partnerDead) || Partner.weVirtualWin))
-      return;
-
   if (   (Limits.use_time_management() && (elapsed > Time.maximum() - 10 || stopOnPonderhit))
       || (Limits.movetime && elapsed >= Limits.movetime)
       || (Limits.nodes && Threads.nodes_searched() >= (uint64_t)Limits.nodes))
@@ -1936,23 +1812,6 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
       if (ss.rdbuf()->in_avail()) // Not at first line
           ss << "\n";
 
-      if (CurrentProtocol == XBOARD)
-      {
-          ss << d << " "
-             << UCI::value(v) << " "
-             << elapsed / 10 << " "
-             << nodesSearched << " "
-             << rootMoves[i].selDepth << " "
-             << nodesSearched * 1000 / elapsed << " "
-             << tbHits << "\t";
-
-          // Do not print PVs with virtual drops in bughouse variants
-          if (!pos.two_boards())
-              for (Move m : rootMoves[i].pv)
-                  ss << " " << UCI::move(pos, m);
-      }
-      else
-      {
       ss << "info"
          << " depth "    << d
          << " seldepth " << rootMoves[i].selDepth
@@ -1977,7 +1836,6 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
 
       for (Move m : rootMoves[i].pv)
           ss << " " << UCI::move(pos, m);
-      }
   }
 
   return ss.str();
