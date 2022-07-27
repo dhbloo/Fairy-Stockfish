@@ -103,7 +103,6 @@ extern UCI::OptionsMap Options;
 enum Protocol {
   UCI_GENERAL,
   UCI_CYCLONE,
-  XBOARD,
 };
 
 extern Protocol CurrentProtocol;

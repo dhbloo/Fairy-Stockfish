@@ -34,7 +34,6 @@
 #include "timeman.h"
 #include "tt.h"
 #include "uci.h"
-#include "xboard.h"
 #include "syzygy/tbprobe.h"
 
 namespace Stockfish {

@@ -26,7 +26,6 @@
 #include "uci.h"
 #include "syzygy/tbprobe.h"
 #include "tt.h"
-#include "xboard.h"
 
 namespace Stockfish {
 
@@ -113,12 +112,6 @@ void Thread::idle_loop() {
       std::unique_lock<std::mutex> lk(mutex);
       searching = false;
       cv.notify_one(); // Wake up anyone waiting for search finished
-      // Start ponder search from separate thread to prevent deadlock
-      if (Threads.size() && this == Threads.main() && XBoard::stateMachine && XBoard::stateMachine->ponderMove)
-      {
-          NativeThread t(&XBoard::StateMachine::ponder, XBoard::stateMachine);
-          t.detach();
-      }
       cv.wait(lk, [&]{ return searching; });
 
       if (exit)

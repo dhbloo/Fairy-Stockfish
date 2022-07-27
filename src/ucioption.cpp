@@ -44,7 +44,6 @@ namespace PSQT {
 
 namespace UCI {
 
-// standard variants of XBoard/WinBoard
 std::set<string> standard_variants = {
     "normal", "xiangqi"
 };

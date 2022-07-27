@@ -31,7 +31,6 @@
 #include "timeman.h"
 #include "tt.h"
 #include "uci.h"
-#include "xboard.h"
 #include "syzygy/tbprobe.h"
 
 using namespace std;
@@ -299,9 +298,6 @@ void UCI::loop(int argc, char* argv[]) {
 
   for (int i = 1; i < argc; ++i)
       cmd += std::string(argv[i]) + " ";
-
-  // XBoard state machine
-  XBoard::stateMachine = new XBoard::StateMachine(pos, states);
   // UCCI banmoves state
   std::vector<Move> banmoves = {};
 
@@ -346,9 +342,6 @@ void UCI::loop(int argc, char* argv[]) {
                           << "\n" << Options
                           << "\n" << token << "ok"  << sync_endl;
       }
-
-      else if (CurrentProtocol == XBOARD)
-          XBoard::stateMachine->process_command(token, is);
 
       else if (token == "setoption")  setoption(is);
       // UCCI-specific banmoves command
@@ -409,14 +402,6 @@ string UCI::value(Value v) {
 
   stringstream ss;
 
-  if (CurrentProtocol == XBOARD)
-  {
-      if (abs(v) < VALUE_MATE_IN_MAX_PLY)
-          ss << v * 100 / PawnValueEg;
-      else
-          ss << (v > 0 ? XBOARD_VALUE_MATE + VALUE_MATE - v + 1 : -XBOARD_VALUE_MATE - VALUE_MATE - v - 1) / 2;
-  } else
-
   if (abs(v) < VALUE_MATE_IN_MAX_PLY)
       ss << "cp " << v * 100 / PawnValueEg;
   else
@@ -453,7 +438,7 @@ std::string UCI::square(const Position& pos, Square s) {
                                   : std::string{ char('a' + file_of(s)), char('0' + ((rank_of(s) + 1) / 10)),
                                                  char('0' + ((rank_of(s) + 1) % 10)) };
 #else
-  return CurrentProtocol == std::string{ char('a' + file_of(s)), char('1' + rank_of(s)) };
+  return std::string{ char('a' + file_of(s)), char('1' + rank_of(s)) };
 #endif
 }
 
