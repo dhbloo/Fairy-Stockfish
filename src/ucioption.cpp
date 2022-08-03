@@ -122,7 +122,6 @@ void init(OptionsMap& o) {
   o["Move Overhead"]         << Option(10, 0, 5000);
   o["Slow Mover"]            << Option(100, 10, 1000);
   o["nodestime"]             << Option(0, 0, 10000);
-  o["UCI_Chess960"]          << Option(false);
   o["UCI_Variant"]           << Option("chess", variants.get_keys(), on_variant_change);
   o["UCI_AnalyseMode"]       << Option(false);
   o["UCI_ShowWDL"]           << Option(false);
@@ -136,7 +135,6 @@ void init(OptionsMap& o) {
 #else
   o["EvalFile"]              << Option("xiangqi-xy.nnue", on_eval_file);
 #endif
-  o["TsumeMode"]             << Option(false);
   o["VariantPath"]           << Option("<empty>", on_variant_path);
   o["usemillisec"]           << Option(true); // time unit for UCCI
 }
