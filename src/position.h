@@ -391,7 +391,7 @@ inline Bitboard Position::board_bb() const {
 
 inline Bitboard Position::board_bb(Color c, PieceType pt) const {
   assert(var != nullptr);
-  return var->mobilityRegion[c][pt] ? var->mobilityRegion[c][pt] & board_bb() : board_bb();
+  return var->boardbb[c][pt];
 }
 
 inline const std::set<PieceType>& Position::piece_types() const {
