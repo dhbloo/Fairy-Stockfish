@@ -814,8 +814,6 @@ bool Position::legal(Move m) const {
   {
       Square kto = to;
       Bitboard occupied = (pieces() ^ from) | kto;
-      if (capture(m) && blast_on_capture())
-          occupied &= ~((attacks_bb<KING>(kto) & (pieces() ^ pieces(PAWN))) | kto);
       Bitboard pseudoRoyals = st->pseudoRoyals & pieces(sideToMove);
       Bitboard pseudoRoyalsTheirs = st->pseudoRoyals & pieces(~sideToMove);
       if (is_ok(from) && (pseudoRoyals & from))
@@ -1637,7 +1635,7 @@ bool Position::is_optional_game_end(Value& result, int ply, int countStarted) co
               if (   stp->key == st->key
                   && ++cnt + 1 == (ply > i && !var->moveRepetitionIllegal ? 2 : n_fold_rule()))
               {
-                  result = convert_mate_value(  var->perpetualCheckIllegal && (perpetualThem || perpetualUs) ? (!perpetualUs ? VALUE_MATE : !perpetualThem ? -VALUE_MATE : VALUE_DRAW)
+                  result = convert_mate_value(  (perpetualThem || perpetualUs) ? (!perpetualUs ? VALUE_MATE : !perpetualThem ? -VALUE_MATE : VALUE_DRAW)
                                               : var->chasingRule && (chaseThem || chaseUs) ? (!chaseUs ? VALUE_MATE : !chaseThem ? -VALUE_MATE : VALUE_DRAW)
                                               : var->nFoldValueAbsolute && sideToMove == BLACK ? -var->nFoldValue
                                               : var->nFoldValue, ply);
@@ -1868,55 +1866,6 @@ bool Position::has_repeated() const {
         stc = stc->previous;
     }
     return false;
-}
-
-
-/// Position::has_game_cycle() tests if the position has a move which draws by repetition,
-/// or an earlier position has a move that directly reaches the current position.
-
-bool Position::has_game_cycle(int ply) const {
-
-  int j;
-
-  int end = std::min(st->rule50, st->pliesFromNull);
-
-  if (end < 3 || var->nFoldValue != VALUE_DRAW || var->perpetualCheckIllegal || var->materialCounting || var->moveRepetitionIllegal)
-    return false;
-
-  Key originalKey = st->key;
-  StateInfo* stp = st->previous;
-
-  for (int i = 3; i <= end; i += 2)
-  {
-      stp = stp->previous->previous;
-
-      Key moveKey = originalKey ^ stp->key;
-      if (   (j = H1(moveKey), cuckoo[j] == moveKey)
-          || (j = H2(moveKey), cuckoo[j] == moveKey))
-      {
-          Move move = cuckooMove[j];
-          Square s1 = from_sq(move);
-          Square s2 = to_sq(move);
-
-          if (!((between_bb(s1, s2) ^ s2) & pieces()))
-          {
-              if (ply > i)
-                  return true;
-
-              // For nodes before or at the root, check that the move is a
-              // repetition rather than a move to the current position.
-              // In the cuckoo table, both moves Rc1c5 and Rc5c1 are stored in
-              // the same location, so we have to select which square to check.
-              if (color_of(piece_on(empty(s1) ? s2 : s1)) != side_to_move())
-                  continue;
-
-              // For repetitions before or at the root, require one more
-              if (stp->repetition)
-                  return true;
-          }
-      }
-  }
-  return false;
 }
 
 

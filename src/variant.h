@@ -112,7 +112,7 @@ struct Variant {
   int nFoldRule = 3;
   Value nFoldValue = VALUE_DRAW;
   bool nFoldValueAbsolute = false;
-  bool perpetualCheckIllegal = false;
+  bool perpetualCheckIllegal = true;
   bool moveRepetitionIllegal = false;
   ChasingRule chasingRule = NO_CHASING;
   Value stalemateValue = VALUE_DRAW;
@@ -268,19 +268,7 @@ struct Variant {
 
       // For endgame evaluation to be applicable, no special win rules must apply.
       // Furthermore, rules significantly changing game mechanics also invalidate it.
-      endgameEval = std::none_of(pieceTypes.begin(), pieceTypes.end(), [this](PieceType pt) {
-                                    return mobilityRegion[WHITE][pt] || mobilityRegion[BLACK][pt];
-                                })
-                    && extinctionValue == VALUE_NONE
-                    && checkmateValue == -VALUE_MATE
-                    && stalemateValue == VALUE_DRAW
-                    && !materialCounting
-                    && !flagPiece
-                    && !mustCapture
-                    && !connectN
-                    && !blastOnCapture
-                    && !capturesToHand
-                    && kingType == KING;
+      endgameEval = false;
 
 
       return this;
