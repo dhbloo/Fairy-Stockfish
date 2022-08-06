@@ -1738,9 +1738,14 @@ Bitboard Position::chased() const {
       return b;
 
   Bitboard pins = blockers_for_king(sideToMove);
-      Bitboard kingFilePieces = file_bb(file_of(square<KING>(~sideToMove))) & pieces(sideToMove);
-      if ((kingFilePieces & pieces(sideToMove, KING)) && !more_than_one(kingFilePieces & ~pieces(KING)))
-          pins |= kingFilePieces & ~pieces(KING);
+  Square ourKing = square<KING>(sideToMove);
+  Square oppKing = square<KING>(~sideToMove);
+  if (file_bb(file_of(ourKing)) & file_bb(file_of(oppKing))) {
+    Bitboard kingFilePieces = between_bb(ourKing, oppKing) ^ square_bb(oppKing);
+    if (!more_than_one(kingFilePieces & pieces()))
+      pins |= kingFilePieces & pieces(sideToMove);
+  }
+
   auto addChased = [&](Square attackerSq, PieceType attackerType, Bitboard attacks) {
       if (attacks & ~b)
       {
