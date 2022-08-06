@@ -684,73 +684,35 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
 
 Bitboard Position::attackers_to(Square s, Bitboard occupied, Color c, Bitboard janggiCannons) const {
 
-  // Use a faster version for variants with moderate rule variations
-  if (var->fastAttacks)
-  {
-      return  (pawn_attacks_bb(~c, s)          & pieces(c, PAWN))
-            | (attacks_bb<KNIGHT>(s)           & pieces(c, KNIGHT, ARCHBISHOP, CHANCELLOR))
-            | (attacks_bb<  ROOK>(s, occupied) & pieces(c, ROOK, QUEEN, CHANCELLOR))
-            | (attacks_bb<BISHOP>(s, occupied) & pieces(c, BISHOP, QUEEN, ARCHBISHOP))
-            | (attacks_bb<KING>(s)             & pieces(c, KING, COMMONER));
-  }
-
-  // Use a faster version for selected fairy pieces
-  if (var->fastAttacks2)
-  {
-      return  (pawn_attacks_bb(~c, s)             & pieces(c, PAWN, BREAKTHROUGH_PIECE, GOLD))
-            | (attacks_bb<KNIGHT>(s)              & pieces(c, KNIGHT))
-            | (attacks_bb<  ROOK>(s, occupied)    & (  pieces(c, ROOK, QUEEN, DRAGON)
-                                                     | (pieces(c, LANCE) & PseudoAttacks[~c][LANCE][s])))
-            | (attacks_bb<BISHOP>(s, occupied)    & pieces(c, BISHOP, QUEEN, DRAGON_HORSE))
-            | (attacks_bb<KING>(s)                & pieces(c, KING, COMMONER))
-            | (attacks_bb<FERS>(s)                & pieces(c, FERS, DRAGON, SILVER))
-            | (attacks_bb<WAZIR>(s)               & pieces(c, WAZIR, DRAGON_HORSE, GOLD))
-            | (LeaperAttacks[~c][SHOGI_KNIGHT][s] & pieces(c, SHOGI_KNIGHT))
-            | (LeaperAttacks[~c][SHOGI_PAWN][s]   & pieces(c, SHOGI_PAWN, SILVER));
-  }
-
   Bitboard b = 0;
-  for (PieceType pt : piece_types())
-      if (board_bb(c, pt) & s)
+
+  auto add_attacks = [&](PieceType pt) {
+    if (board_bb(c, pt) & s)
+    {
+      PieceType move_pt = pt == KING ? king_type() : pt;
+      // Consider asymmetrical moves (e.g., horse)
+      if (AttackRiderTypes[move_pt] & ASYMMETRICAL_RIDERS)
       {
-          PieceType move_pt = pt == KING ? king_type() : pt;
-          // Consider asymmetrical moves (e.g., horse)
-          if (AttackRiderTypes[move_pt] & ASYMMETRICAL_RIDERS)
+          Bitboard asymmetricals = PseudoAttacks[~c][move_pt][s] & pieces(c, pt);
+          while (asymmetricals)
           {
-              Bitboard asymmetricals = PseudoAttacks[~c][move_pt][s] & pieces(c, pt);
-              while (asymmetricals)
-              {
-                  Square s2 = pop_lsb(asymmetricals);
-                  if (attacks_bb(c, move_pt, s2, occupied) & s)
-                      b |= s2;
-              }
+              Square s2 = pop_lsb(asymmetricals);
+              if (attacks_bb(c, move_pt, s2, occupied) & s)
+                  b |= s2;
           }
-          else
-              b |= attacks_bb(~c, move_pt, s, occupied) & pieces(c, pt);
       }
+      else
+          b |= attacks_bb(~c, move_pt, s, occupied) & pieces(c, pt);
+    }
+  };
 
-  // Consider special move of neang in cambodian chess
-  if (cambodian_moves())
-  {
-      Square fers_sq = s + 2 * (c == WHITE ? SOUTH : NORTH);
-      if (is_ok(fers_sq))
-          b |= pieces(c, FERS) & gates(c) & fers_sq;
-  }
-
-  // Janggi palace moves
-  if (diagonal_lines() & s)
-  {
-      Bitboard diags = 0;
-      if (king_type() == WAZIR)
-          diags |= attacks_bb(~c, FERS, s, occupied) & pieces(c, KING);
-      diags |= attacks_bb(~c, FERS, s, occupied) & pieces(c, WAZIR);
-      diags |= attacks_bb(~c, PAWN, s, occupied) & pieces(c, SOLDIER);
-      diags |= rider_attacks_bb<RIDER_BISHOP>(s, occupied) & pieces(c, ROOK);
-      diags |=  rider_attacks_bb<RIDER_CANNON_DIAG>(s, occupied)
-              & rider_attacks_bb<RIDER_CANNON_DIAG>(s, occupied & ~janggiCannons)
-              & pieces(c, JANGGI_CANNON);
-      b |= diags & diagonal_lines();
-  }
+  add_attacks(PieceType::ROOK);
+  add_attacks(PieceType::FERS);
+  add_attacks(PieceType::CANNON);
+  add_attacks(PieceType::SOLDIER);
+  add_attacks(PieceType::HORSE);
+  add_attacks(PieceType::ELEPHANT);
+  add_attacks(PieceType::KING);
 
   // Unpromoted soldiers
   if (b & pieces(SOLDIER) && relative_rank(c, s, max_rank()) < var->soldierPromotionRank)
