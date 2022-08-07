@@ -580,28 +580,37 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
   Bitboard snipers = 0;
   Bitboard slidingSnipers = 0;
 
-      for (PieceType pt : piece_types())
+  auto add_snipers = [&](PieceType pt) {
+      Bitboard b = sliders & (PseudoAttacks[~c][pt][s] ^ LeaperAttacks[~c][pt][s]) & pieces(c, pt);
+      if (b)
       {
-          Bitboard b = sliders & (PseudoAttacks[~c][pt][s] ^ LeaperAttacks[~c][pt][s]) & pieces(c, pt);
-          if (b)
+          // Consider asymmetrical moves (e.g., horse)
+          if (AttackRiderTypes[pt] & ASYMMETRICAL_RIDERS)
           {
-              // Consider asymmetrical moves (e.g., horse)
-              if (AttackRiderTypes[pt] & ASYMMETRICAL_RIDERS)
+              Bitboard asymmetricals = PseudoAttacks[~c][pt][s] & pieces(c, pt);
+              while (asymmetricals)
               {
-                  Bitboard asymmetricals = PseudoAttacks[~c][pt][s] & pieces(c, pt);
-                  while (asymmetricals)
-                  {
-                      Square s2 = pop_lsb(asymmetricals);
-                      if (!(attacks_from(c, pt, s2) & s))
-                          snipers |= s2;
-                  }
+                  Square s2 = pop_lsb(asymmetricals);
+                  if (!(attacks_from(c, pt, s2) & s))
+                      snipers |= s2;
               }
-              else
-                  snipers |= b & ~attacks_bb(~c, pt, s, pieces());
-              if (AttackRiderTypes[pt] & ~HOPPING_RIDERS)
-                  slidingSnipers |= snipers & pieces(pt);
           }
+          else
+              snipers |= b & ~attacks_bb(~c, pt, s, pieces());
+          if (AttackRiderTypes[pt] & ~HOPPING_RIDERS)
+              slidingSnipers |= snipers & pieces(pt);
       }
+  };
+
+  assert(piece_types().size() == 7);
+  add_snipers(PieceType::ROOK);
+  add_snipers(PieceType::FERS);
+  add_snipers(PieceType::CANNON);
+  add_snipers(PieceType::SOLDIER);
+  add_snipers(PieceType::HORSE);
+  add_snipers(PieceType::ELEPHANT);
+  add_snipers(PieceType::KING);
+
   Bitboard occupancy = pieces() ^ slidingSnipers;
 
   while (snipers)
@@ -624,7 +633,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
 /// Position::attackers_to() computes a bitboard of all pieces which attack a
 /// given square. Slider attacks use the occupied bitboard to indicate occupancy.
 
-Bitboard Position::attackers_to(Square s, Bitboard occupied, Color c, Bitboard janggiCannons) const {
+Bitboard Position::attackers_to(Square s, Bitboard occupied, Color c) const {
 
   Bitboard b = 0;
 
@@ -697,18 +706,6 @@ bool Position::legal(Move m) const {
   assert(!count<KING>(us) || piece_on(square<KING>(us)) == make_piece(us, KING));
   assert(board_bb() & to);
 
-  // Illegal checks
-  if (!checking_permitted() && gives_check(m))
-      return false;
-
-  // Illegal quiet moves
-  if (must_capture() && !capture(m) && has_capture())
-      return false;
-
-  // No legal moves from target square
-  if (immobility_illegal() && !(moves_bb(us, type_of(moved_piece(m)), to, 0) & board_bb()))
-      return false;
-
   Bitboard occupied = (pieces() ^ from) | to;
 
   // Flying general rule
@@ -729,14 +726,8 @@ bool Position::legal(Move m) const {
   if (!count<KING>(us))
       return true;
 
-  Bitboard janggiCannons = pieces(JANGGI_CANNON);
-  if (type_of(moved_piece(m)) == JANGGI_CANNON)
-      janggiCannons = janggiCannons | to;
-  else if (janggiCannons & to)
-      janggiCannons ^= to;
-
   // A non-king move is legal if the king is not under attack after the move.
-  return !(attackers_to(square<KING>(us), occupied, ~us, janggiCannons) & ~SquareBB[to]);
+  return !(attackers_to(square<KING>(us), occupied, ~us) & ~SquareBB[to]);
 }
 
 
@@ -753,13 +744,6 @@ bool Position::pseudo_legal(const Move m) const {
 
   // Illegal moves to squares outside of board
   if (!(board_bb() & to))
-      return false;
-
-  // Handle the case where a mandatory piece promotion/demotion is not taken
-  if (    mandatory_piece_promotion()
-      && (is_promoted(from) ? piece_demotion() : promoted_piece_type(type_of(pc)) != NO_PIECE_TYPE)
-      && (zone_bb(us, promotion_rank(), max_rank()) & (SquareBB[from] | to))
-      && (!piece_promotion_on_capture() || capture(m)))
       return false;
 
   // If the 'from' square is not occupied by a piece belonging to the side to
@@ -826,28 +810,18 @@ bool Position::gives_check(Move m) const {
       else if (check_squares(pt) & to)
           return true;
 
-  Bitboard janggiCannons = pieces(JANGGI_CANNON);
-  if (type_of(moved_piece(m)) == JANGGI_CANNON)
-      janggiCannons = (janggiCannons ^ from) | to;
-  else if (janggiCannons & to)
-      janggiCannons ^= to;
-
   // Is there a discovered check?
   if (  ((blockers_for_king(~sideToMove) & from)) || (non_sliding_riders() & pieces(sideToMove))
-      && attackers_to(square<KING>(~sideToMove), (pieces() ^ from) | to, sideToMove, janggiCannons))
+      && attackers_to(square<KING>(~sideToMove), (pieces() ^ from) | to, sideToMove))
       return true;
 
   // Is there a check by special diagonal moves?
   if (more_than_one(diagonal_lines() & (to | square<KING>(~sideToMove))))
   {
       PieceType pt = type_of(moved_piece(m));
-      PieceType diagType = pt == WAZIR ? FERS : pt == SOLDIER ? PAWN : pt == ROOK ? BISHOP : NO_PIECE_TYPE;
+      PieceType diagType = pt == SOLDIER ? PAWN : pt == ROOK ? BISHOP : NO_PIECE_TYPE;
       Bitboard occupied = pieces() ^ from;
       if (diagType && (attacks_bb(sideToMove, diagType, to, occupied) & square<KING>(~sideToMove)))
-          return true;
-      else if (pt == JANGGI_CANNON && (  rider_attacks_bb<RIDER_CANNON_DIAG>(to, occupied)
-                                       & rider_attacks_bb<RIDER_CANNON_DIAG>(to, occupied & ~janggiCannons)
-                                       & square<KING>(~sideToMove)))
           return true;
   }
 
@@ -1231,10 +1205,6 @@ bool Position::see_ge(Move m, Value threshold) const {
           || (   extinction_piece_types().find(ALL_PIECES) != extinction_piece_types().end()
               && count<ALL_PIECES>(~sideToMove) == extinction_piece_count() + 1)))
       return extinction_value() < VALUE_ZERO;
-
-  // Do not evaluate SEE if value would be unreliable
-  if (must_capture() || !checking_permitted() || count<CLOBBER_PIECE>() == count<ALL_PIECES>())
-      return VALUE_ZERO >= threshold;
 
   int swap = PieceValue[MG][piece_on(to)] - threshold;
   if (swap < 0)

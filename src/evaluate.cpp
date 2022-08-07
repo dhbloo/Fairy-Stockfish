@@ -504,13 +504,6 @@ namespace {
             score += make_score(PieceValue[MG][Pt] - PieceValue[MG][pos.unpromoted_piece_on(s)],
                                 PieceValue[EG][Pt] - PieceValue[EG][pos.unpromoted_piece_on(s)]) / 8;
 
-        // Penalty if the piece is far from the kings in drop variants
-        if ((pos.captures_to_hand() || pos.two_boards()) && pos.count<KING>(Them) && pos.count<KING>(Us))
-        {
-            if (!(b & (kingRing[Us] | kingRing[Them])))
-                score -= KingProximity * distance(s, pos.square<KING>(Us)) * distance(s, pos.square<KING>(Them));
-        }
-
         else if (pos.count<KING>(Us) && (Pt == FERS || Pt == SILVER))
             score -= EndgameKingProximity * (distance(s, pos.square<KING>(Us)) - 2);
 
@@ -587,14 +580,6 @@ namespace {
                         score -= TrappedRook * 2;
                 }
             }
-        }
-
-        if (Pt == QUEEN)
-        {
-            // Penalty if any relative pin or discovered attack against the queen
-            Bitboard queenPinners;
-            if (pos.slider_blockers(pos.pieces(Them, ROOK, BISHOP), s, queenPinners, Them))
-                score -= WeakQueen;
         }
     }
     if constexpr (T)
@@ -679,37 +664,12 @@ namespace {
     {
         switch (pt)
         {
-        case QUEEN:
-            // Enemy queen safe checks: we count them only if they are from squares from
-            // which we can't give a rook check, because rook checks are more valuable.
-            queenChecks = (b1 | b2)
-                        & get_attacks(Them, QUEEN)
-                        & pos.board_bb()
-                        & safe
-                        & ~attackedBy[Us][QUEEN]
-                        & ~(b1 & attackedBy[Them][ROOK]);
-
-            if (queenChecks)
-                kingDanger += SafeCheck[QUEEN][more_than_one(queenChecks)];
-            break;
         case ROOK:
-        case BISHOP:
-        case KNIGHT:
             knightChecks = attacks_bb(Us, pt, ksq, pos.pieces() ^ pos.pieces(Us, QUEEN)) & get_attacks(Them, pt) & pos.board_bb();
             if (knightChecks & safe)
                 kingDanger += SafeCheck[pt][more_than_one(knightChecks & safe)];
             else
                 unsafeChecks |= knightChecks;
-            break;
-        case PAWN:
-            if (pos.piece_drops() && pos.count_in_hand(Them, pt) > 0)
-            {
-                pawnChecks = attacks_bb(Us, pt, ksq, pos.pieces()) & ~pos.pieces() & pos.board_bb();
-                if (pawnChecks & safe)
-                    kingDanger += SafeCheck[PAWN][more_than_one(pawnChecks & safe)];
-                else
-                    unsafeChecks |= pawnChecks;
-            }
             break;
         case KING:
             break;
@@ -761,13 +721,7 @@ namespace {
     // Penalty if king flank is under attack, potentially moving toward the king
     score -= FlankAttacks * kingFlankAttack * (1 + 5 * pos.captures_to_hand());
 
-    if (pos.king_type() == WAZIR)
-        score += make_score(0, mg_value(score) / 2);
-
-    // For drop games, king danger is independent of game phase, but dependent on material density
-    if (pos.captures_to_hand() || pos.two_boards())
-        score = make_score(mg_value(score) * me->material_density() / 11000,
-                           mg_value(score) * me->material_density() / 11000);
+    score += make_score(0, mg_value(score) / 2);
 
     if constexpr (T)
         Trace::add(KING, Us, score);
@@ -855,9 +809,6 @@ namespace {
         b =  ~attackedBy[Them][ALL_PIECES]
            | (nonPawnEnemies & attackedBy2[Us]);
         score += Hanging * popcount(weak & b);
-
-        // Additional bonus if weak piece is only protected by a queen
-        score += WeakQueenProtection * popcount(weak & attackedBy[Them][QUEEN]);
     }
 
     // Bonus for restricting their piece moves
@@ -1123,7 +1074,7 @@ namespace {
             {
                 // Single piece type extinction bonus
                 int denom = std::max(pos.count(Us, pt) - pos.extinction_piece_count(), 1);
-                if (pos.count(Them, pt) >= pos.extinction_opponent_piece_count() || pos.two_boards())
+                if (pos.count(Them, pt) >= pos.extinction_opponent_piece_count())
                     score += make_score(1000000 / (500 + PieceValue[MG][pt]),
                                         1000000 / (500 + PieceValue[EG][pt])) / (denom * denom)
                             * (pos.extinction_value() / VALUE_MATE);
@@ -1143,17 +1094,6 @@ namespace {
                     score -= make_score(80 - 10 * (edge_distance(f, pos.max_file()) % 2),
                                         80 - 15 * (edge_distance(f, pos.max_file()) % 2)) * m / (1 + l * r);
                 }
-            }
-            else if (pos.count<PAWN>(Them) == pos.count<ALL_PIECES>(Them))
-            {
-                // Add a bonus according to how close we are to breaking through the pawn wall
-                int dist = 8;
-                Bitboard breakthroughs = attackedBy[Us][ALL_PIECES] & rank_bb(relative_rank(Us, pos.max_rank(), pos.max_rank()));
-                if (breakthroughs)
-                    dist = attackedBy[Us][QUEEN] & breakthroughs ? 0 : 1;
-                else for (File f = FILE_A; f <= pos.max_file(); ++f)
-                    dist = std::min(dist, popcount(pos.pieces(PAWN) & file_bb(f)));
-                score += make_score(70, 70) * pos.count<PAWN>(Them) / (1 + dist * dist) / (pos.pieces(Us, QUEEN) ? 2 : 4);
             }
     }
 
@@ -1232,7 +1172,7 @@ namespace {
     // No initiative bonus for extinction variants
     int complexity = 0;
     bool pawnsOnBothFlanks = true;
-    if (pos.extinction_value() == VALUE_NONE && !pos.captures_to_hand() && !pos.connect_n() && !pos.material_counting())
+    if (pos.extinction_value() == VALUE_NONE && !pos.connect_n() && !pos.material_counting())
     {
     int outflanking = !pos.count<KING>(WHITE) || !pos.count<KING>(BLACK) ? 0
                      :  distance<File>(pos.square<KING>(WHITE), pos.square<KING>(BLACK))

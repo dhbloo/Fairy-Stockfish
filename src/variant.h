@@ -137,7 +137,6 @@ struct Variant {
   int pieceHandIndex[COLOR_NB][PIECE_NB];
   int kingSquareIndex[SQUARE_NB];
   int nnueMaxPieces;
-  bool endgameEval = false;
 
   void add_piece(PieceType pt, char c, std::string betza = "", char c2 = ' ') {
       pieceToChar[make_piece(WHITE, pt)] = toupper(c);
@@ -236,11 +235,6 @@ struct Variant {
           if (pieceToChar.find(token) != std::string::npos || pieceToCharSynonyms.find(token) != std::string::npos)
               nnueMaxPieces++;
       }
-
-      // For endgame evaluation to be applicable, no special win rules must apply.
-      // Furthermore, rules significantly changing game mechanics also invalidate it.
-      endgameEval = false;
-
 
       return this;
   }

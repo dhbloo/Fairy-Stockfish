@@ -131,7 +131,6 @@ public:
   bool mandatory_pawn_promotion() const;
   bool mandatory_piece_promotion() const;
   bool piece_demotion() const;
-  bool endgame_eval() const;
   bool double_step_enabled() const;
   Rank double_step_rank_max() const;
   Rank double_step_rank_min() const;
@@ -240,7 +239,6 @@ public:
   Bitboard attackers_to(Square s, Color c) const;
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   Bitboard attackers_to(Square s, Bitboard occupied, Color c) const;
-  Bitboard attackers_to(Square s, Bitboard occupied, Color c, Bitboard janggiCannons) const;
   Bitboard attacks_from(Color c, PieceType pt, Square s) const;
   Bitboard moves_from(Color c, PieceType pt, Square s) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Color c) const;
@@ -443,11 +441,6 @@ inline bool Position::mandatory_piece_promotion() const {
 inline bool Position::piece_demotion() const {
   assert(var != nullptr);
   return var->pieceDemotion;
-}
-
-inline bool Position::endgame_eval() const {
-  assert(var != nullptr);
-  return var->endgameEval && !count_in_hand(ALL_PIECES) && count<KING>() == 2;
 }
 
 inline bool Position::double_step_enabled() const {
@@ -998,10 +991,6 @@ inline Bitboard Position::attackers_to(Square s) const {
 
 inline Bitboard Position::attackers_to(Square s, Color c) const {
   return attackers_to(s, byTypeBB[ALL_PIECES], c);
-}
-
-inline Bitboard Position::attackers_to(Square s, Bitboard occupied, Color c) const {
-  return attackers_to(s, occupied, c, byTypeBB[JANGGI_CANNON]);
 }
 
 inline Bitboard Position::checkers() const {

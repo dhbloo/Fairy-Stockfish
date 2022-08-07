@@ -409,13 +409,7 @@ inline Bitboard rider_attacks_bb(Square s, Bitboard occupied) {
                   : R == RIDER_CANNON_V ? CannonMagicsV[s]
                   : R == RIDER_HORSE ? HorseMagics[s]
                   : R == RIDER_ELEPHANT ? ElephantMagics[s]
-                  : R == RIDER_JANGGI_ELEPHANT ? JanggiElephantMagics[s]
-                  : R == RIDER_CANNON_DIAG ? CannonDiagMagics[s]
-                  : R == RIDER_NIGHTRIDER ? NightriderMagics[s]
-                  : R == RIDER_GRASSHOPPER_H ? GrasshopperMagicsH[s]
-                  : R == RIDER_GRASSHOPPER_V ? GrasshopperMagicsV[s]
-                  : R == RIDER_GRASSHOPPER_D ? GrasshopperMagicsD[s]
-                  : BishopMagics[s];
+                  : CannonDiagMagics[s];
   return m.attacks[m.index(occupied)];
 }
 
@@ -435,7 +429,7 @@ inline Bitboard rider_attacks_bb(RiderType R, Square s, Bitboard occupied) {
 template<PieceType Pt>
 inline Bitboard attacks_bb(Square s) {
 
-  assert((Pt != PAWN) && (is_ok(s)));
+  assert(is_ok(s));
 
   return PseudoAttacks[WHITE][Pt][s];
 }
@@ -448,15 +442,10 @@ inline Bitboard attacks_bb(Square s) {
 template<PieceType Pt>
 inline Bitboard attacks_bb(Square s, Bitboard occupied) {
 
-  assert((Pt != PAWN) && (is_ok(s)));
-
-  switch (Pt)
-  {
-  case BISHOP: return rider_attacks_bb<RIDER_BISHOP>(s, occupied);
-  case ROOK  : return rider_attacks_bb<RIDER_ROOK_H>(s, occupied) | rider_attacks_bb<RIDER_ROOK_V>(s, occupied);
-  case QUEEN : return attacks_bb<BISHOP>(s, occupied) | attacks_bb<ROOK>(s, occupied);
-  default    : return PseudoAttacks[WHITE][Pt][s];
-  }
+  assert(is_ok(s));
+  if (Pt == ROOK)
+    return rider_attacks_bb<RIDER_ROOK_H>(s, occupied) | rider_attacks_bb<RIDER_ROOK_V>(s, occupied);
+  return PseudoAttacks[WHITE][Pt][s];
 }
 
 /// pop_rider() finds and clears a rider in a (hybrid) rider type

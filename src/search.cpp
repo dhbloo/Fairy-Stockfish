@@ -1038,7 +1038,6 @@ moves_loop: // When in check, search starts from here
           if (   !rootNode
               &&  depth >= 6 - (thisThread->previousDepth / 9) + PvNode + tte->is_pv()
               &&  move == ttMove
-              && !excludedMove // Avoid recursive singular search
            /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
               &&  abs(ttValue) < VALUE_KNOWN_WIN
               && (tte->bound() & BOUND_LOWER)

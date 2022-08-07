@@ -1,17 +1,14 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
   Copyright (C) 2004-2022 The Stockfish developers (see AUTHORS file)
-
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-
   Stockfish is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -279,8 +276,21 @@ namespace Stockfish::Eval::NNUE::Layers {
               const auto col1 = reinterpret_cast<const vec_t*>(&weights[(i + 1) * OutputDimensions * 4]);
               const auto col2 = reinterpret_cast<const vec_t*>(&weights[(i + 2) * OutputDimensions * 4]);
               const auto col3 = reinterpret_cast<const vec_t*>(&weights[(i + 3) * OutputDimensions * 4]);
-              for (int j = 0; j * OutputSimdWidth < OutputDimensions; ++j)
-                  vec_add_dpbusd_32x4(outptr[j], in0, col0[j], in1, col1[j], in2, col2[j], in3, col3[j]);
+
+              int j = 0;
+              for (; (j + 3) * OutputSimdWidth < OutputDimensions; j += 4) {
+                  vec_add_dpbusd_32x4(outptr[j + 0], in0, col0[j + 0], in1, col1[j + 0], in2, col2[j + 0], in3, col3[j + 0]);
+                  vec_add_dpbusd_32x4(outptr[j + 1], in0, col0[j + 1], in1, col1[j + 1], in2, col2[j + 1], in3, col3[j + 1]);
+                  vec_add_dpbusd_32x4(outptr[j + 2], in0, col0[j + 2], in1, col1[j + 2], in2, col2[j + 2], in3, col3[j + 2]);
+                  vec_add_dpbusd_32x4(outptr[j + 3], in0, col0[j + 3], in1, col1[j + 3], in2, col2[j + 3], in3, col3[j + 3]);
+              }
+
+              if constexpr (OutputDimensions % (4 * OutputSimdWidth) >= 1 * OutputSimdWidth)
+                  vec_add_dpbusd_32x4(outptr[j + 0], in0, col0[j + 0], in1, col1[j + 0], in2, col2[j + 0], in3, col3[j + 0]);
+              if constexpr (OutputDimensions % (4 * OutputSimdWidth) >= 2 * OutputSimdWidth)
+                  vec_add_dpbusd_32x4(outptr[j + 1], in0, col0[j + 1], in1, col1[j + 1], in2, col2[j + 1], in3, col3[j + 1]);
+              if constexpr (OutputDimensions % (4 * OutputSimdWidth) >= 3 * OutputSimdWidth)
+                  vec_add_dpbusd_32x4(outptr[j + 2], in0, col0[j + 2], in1, col1[j + 2], in2, col2[j + 2], in3, col3[j + 2]);
           }
       }
       else if constexpr (OutputDimensions == 1)
