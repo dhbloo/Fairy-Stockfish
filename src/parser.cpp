@@ -88,13 +88,6 @@ namespace {
               || value == "whitedrawodds" || value == "blackdrawodds" || value == "none";
     }
 
-    template <> bool set(const std::string& value, CountingRule& target) {
-        target =  value == "makruk"  ? MAKRUK_COUNTING
-                : value == "asean" ? ASEAN_COUNTING
-                : NO_COUNTING;
-        return value == "makruk" || value == "asean" || value == "none";
-    }
-
     template <> bool set(const std::string& value, ChasingRule& target) {
         target =  value == "axf"  ? AXF_CHASING
                 : NO_CHASING;
@@ -134,7 +127,6 @@ template <class T> void VariantParser<DoCheck>::parse_attribute(const std::strin
                                   : std::is_same<T, bool>() ? "bool"
                                   : std::is_same<T, Value>() ? "Value"
                                   : std::is_same<T, MaterialCounting>() ? "MaterialCounting"
-                                  : std::is_same<T, CountingRule>() ? "CountingRule"
                                   : std::is_same<T, ChasingRule>() ? "ChasingRule"
                                   : std::is_same<T, EnclosingRule>() ? "EnclosingRule"
                                   : std::is_same<T, Bitboard>() ? "Bitboard"
@@ -327,13 +319,10 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("immobilityIllegal", v->immobilityIllegal);
     parse_attribute("gating", v->gating);
     parse_attribute("arrowGating", v->arrowGating);
-    parse_attribute("seirawanGating", v->seirawanGating);
     parse_attribute("cambodianMoves", v->cambodianMoves);
     parse_attribute("diagonalLines", v->diagonalLines);
     parse_attribute("pass", v->pass);
     parse_attribute("passOnStalemate", v->passOnStalemate);
-    parse_attribute("makpongRule", v->makpongRule);
-    parse_attribute("flyingGeneral", v->flyingGeneral);
     parse_attribute("soldierPromotionRank", v->soldierPromotionRank);
     parse_attribute("flipEnclosedPieces", v->flipEnclosedPieces);
     // game end
@@ -347,9 +336,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("stalemateValue", v->stalemateValue);
     parse_attribute("stalematePieceCount", v->stalematePieceCount);
     parse_attribute("checkmateValue", v->checkmateValue);
-    parse_attribute("shogiPawnDropMateIllegal", v->shogiPawnDropMateIllegal);
-    parse_attribute("shatarMateRule", v->shatarMateRule);
-    parse_attribute("bikjangRule", v->bikjangRule);
     parse_attribute("extinctionValue", v->extinctionValue);
     parse_attribute("extinctionClaim", v->extinctionClaim);
     parse_attribute("extinctionPseudoRoyal", v->extinctionPseudoRoyal);
@@ -372,10 +358,8 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("whiteFlag", v->whiteFlag);
     parse_attribute("blackFlag", v->blackFlag);
     parse_attribute("flagMove", v->flagMove);
-    parse_attribute("checkCounting", v->checkCounting);
     parse_attribute("connectN", v->connectN);
     parse_attribute("materialCounting", v->materialCounting);
-    parse_attribute("countingRule", v->countingRule);
 
     v->conclude(); // In preparation for the consistency checks below, in case conclude() hasn't been called yet.
 
@@ -421,10 +405,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
                     std::cerr << "pieceToCharTable - Missing piece type: " << ptu << std::endl;
             }
         }
-
-        // Contradictory options
-        if (!v->checking && v->checkCounting)
-            std::cerr << "checkCounting=true requires checking=true." << std::endl;
         if (v->doubleStep && v->doubleStepRankMin > v->doubleStepRank)
             std::cerr << "Inconsistent settings: doubleStepRankMin > doubleStepRank." << std::endl;
         if (v->castling && v->castlingRank > v->maxRank)

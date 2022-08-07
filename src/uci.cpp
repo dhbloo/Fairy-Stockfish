@@ -224,8 +224,8 @@ namespace {
      // Coefficients of a 3rd order polynomial fit based on fishtest data
      // for two parameters needed to transform eval to the argument of a
      // logistic function.
-     double as[] = {-3.68389304,  30.07065921, -60.52878723, 149.53378557};
-     double bs[] = {-2.0181857,   15.85685038, -29.83452023,  47.59078827};
+     double as[] = { 0.50379905,  -4.12755858,  18.95487051, 152.00733652};
+     double bs[] = {-1.71790378,  10.71543602, -17.05515898,  41.15680404};
      double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
      double b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3];
 

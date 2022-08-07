@@ -240,8 +240,6 @@ void Bitboards::init_pieces() {
                   riderTypes |= RIDER_HORSE;
               if (limit && ElephantDirections.find(d) != ElephantDirections.end())
                   riderTypes |= RIDER_ELEPHANT;
-              if (limit && JanggiElephantDirections.find(d) != JanggiElephantDirections.end())
-                  riderTypes |= RIDER_JANGGI_ELEPHANT;
           }
           for (auto const& [d, limit] : pi->slider[modality])
           {

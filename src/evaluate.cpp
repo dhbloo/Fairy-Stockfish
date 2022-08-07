@@ -632,10 +632,6 @@ namespace {
         if (pos.enclosing_drop())
             mobility[Us] += make_score(500, 500) * popcount(b);
 
-        // Reduce score if there is a deficit of gates
-        if (pos.seirawan_gating() && !pos.piece_drops() && pos.count_in_hand(Us, ALL_PIECES) > popcount(pos.gates(Us)))
-            score -= make_score(200, 900) / pos.count_in_hand(Us, ALL_PIECES) * (pos.count_in_hand(Us, ALL_PIECES) - popcount(pos.gates(Us)));
-
         // Redundant pieces that can not be doubled per file (e.g., shogi pawns)
         if (pt == pos.drop_no_doubled())
             score -= make_score(50, 20) * std::max(pos.count_with_hand(Us, pt) - pos.max_file() - 1, 0);
@@ -748,8 +744,7 @@ namespace {
                  +   3 * kingFlankAttack * kingFlankAttack / 8
                  +       mg_value(mobility[Them] - mobility[Us]) * int(!pos.captures_to_hand())
                  - 873 * !(pos.major_pieces(Them) || pos.captures_to_hand())
-                       * 2 / (2 + 2 * pos.two_boards() + 2 * pos.makpong()
-                                + (pos.king_type() != KING) * (pos.diagonal_lines() ? 1 : 2))
+                       * 2 / (2 + (pos.king_type() != KING) * (pos.diagonal_lines() ? 1 : 2))
                  - 100 * bool(attackedBy[Us][KNIGHT] & attackedBy[Us][KING])
                  -   6 * mg_value(score) / 8
                  -   4 * kingFlankDefense
@@ -824,23 +819,6 @@ namespace {
                 continue;
             int denom = std::max(pos.count_with_hand(Them, pt) - pos.extinction_piece_count(), 1);
             // Explosion threats
-            if (pos.blast_on_capture())
-            {
-                int evasions = popcount(((attackedBy[Them][pt] & ~pos.pieces(Them)) | pos.pieces(Them, pt)) & ~attackedBy[Us][ALL_PIECES]) * denom;
-                int attacks = popcount((attackedBy[Them][pt] | pos.pieces(Them, pt)) & attackedBy[Us][ALL_PIECES]);
-                int explosions = 0;
-
-                Bitboard bExtBlast = bExt & (attackedBy2[Us] | ~attackedBy[Us][pt]);
-                while (bExtBlast)
-                {
-                    Square s = pop_lsb(bExtBlast);
-                    if (((attacks_bb<KING>(s) | s) & pos.pieces(Them, pt)) && !(attacks_bb<KING>(s) & pos.pieces(Us, pt)))
-                        explosions++;
-                }
-                int danger = 20 * attacks / (evasions + 1) + 40 * explosions;
-                score += make_score(danger * (100 + danger), 0);
-            }
-            else
                 // Direct extinction threats
                 score += make_score(1000, 1000) / (denom * denom) * popcount(bExt & pos.pieces(Them, pt));
         }
@@ -906,26 +884,6 @@ namespace {
     // Bonus for safe pawn threats on the next move
     b = (pawn_attacks_bb<Us>(b) | shift<Up>(shift<Up>(pos.pieces(Us, SHOGI_PAWN, SOLDIER)))) & nonPawnEnemies;
     score += ThreatByPawnPush * popcount(b);
-
-    // Bonus for threats on the next moves against enemy queen
-    if (pos.count<QUEEN>(Them) == 1)
-    {
-        bool queenImbalance = pos.count<QUEEN>() == 1;
-
-        Square s = pos.square<QUEEN>(Them);
-        safe =   mobilityArea[Us]
-              & ~pos.pieces(Us, PAWN)
-              & ~stronglyProtected;
-
-        b = attackedBy[Us][KNIGHT] & attacks_bb<KNIGHT>(s);
-
-        score += KnightOnQueen * popcount(b & safe) * (1 + queenImbalance);
-
-        b =  (attackedBy[Us][BISHOP] & attacks_bb<BISHOP>(s, pos.pieces()))
-           | (attackedBy[Us][ROOK  ] & attacks_bb<ROOK  >(s, pos.pieces()));
-
-        score += SliderOnQueen * popcount(b & safe & attackedBy2[Us]) * (1 + queenImbalance);
-    }
 
     if constexpr (T)
         Trace::add(THREAT, Us, score);
@@ -1318,24 +1276,12 @@ namespace {
     int sf = me->scale_factor(strongSide);
 
     // If scale factor is not already specific, scale up/down via general heuristics
-    if (sf == SCALE_FACTOR_NORMAL && !pos.captures_to_hand() && !pos.material_counting())
+    if (sf == SCALE_FACTOR_NORMAL && !pos.material_counting())
     {
-        if (pos.opposite_bishops())
-        {
-            // For pure opposite colored bishops endgames use scale factor
-            // based on the number of passed pawns of the strong side.
-            if (   pos.non_pawn_material(WHITE) == BishopValueMg
-                && pos.non_pawn_material(BLACK) == BishopValueMg)
-                sf = 18 + 4 * popcount(pe->passed_pawns(strongSide));
-            // For every other opposite colored bishops endgames use scale factor
-            // based on the number of all pieces of the strong side.
-            else
-                sf = 22 + 3 * pos.count<ALL_PIECES>(strongSide);
-        }
         // For rook endgames with strong side not having overwhelming pawn number advantage
         // and its pawns being on one flank and weak side protecting its pieces with a king
         // use lower scale factor.
-        else if (  pos.non_pawn_material(WHITE) == RookValueMg
+        if (  pos.non_pawn_material(WHITE) == RookValueMg
                 && pos.non_pawn_material(BLACK) == RookValueMg
                 && pos.count<PAWN>(strongSide) - pos.count<PAWN>(~strongSide) <= 1
                 && bool(KingSide & pos.pieces(strongSide, PAWN)) != bool(QueenSide & pos.pieces(strongSide, PAWN))
@@ -1344,11 +1290,6 @@ namespace {
             sf = 36;
         // For queen vs no queen endgames use scale factor
         // based on number of minors of side that doesn't have queen.
-        else if (pos.count<QUEEN>() == 1)
-            sf = 37 + 3 * (pos.count<QUEEN>(WHITE) == 1 ? pos.count<BISHOP>(BLACK) + pos.count<KNIGHT>(BLACK)
-                                                        : pos.count<BISHOP>(WHITE) + pos.count<KNIGHT>(WHITE));
-        // In every other case use scale factor based on
-        // the number of pawns of the strong side reduced if pawns are on a single flank.
         else
             sf = std::min(sf, 36 + 7 * (pos.count<PAWN>(strongSide) + pos.count<SOLDIER>(strongSide))) - 4 * !pawnsOnBothFlanks;
 
@@ -1417,7 +1358,6 @@ namespace {
     score +=  threats<WHITE>() - threats<BLACK>()
             + space<  WHITE>() - space<  BLACK>();
 
-make_v:
     // Derive single value from mg and eg parts of score
     Value v = winnable(score);
 

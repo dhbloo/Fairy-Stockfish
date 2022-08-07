@@ -50,7 +50,6 @@ struct StateInfo {
   int    rule50;
   int    pliesFromNull;
   int    countingPly;
-  int    countingLimit;
   CheckCount checksRemaining[COLOR_NB];
   Square epSquare;
   Square castlingKingSquare[COLOR_NB];
@@ -74,7 +73,6 @@ struct StateInfo {
   OptBool    legalCapture;
   bool       capturedpromoted;
   bool       shak;
-  bool       bikjang;
   Bitboard   chased;
   bool       pass;
   Move       move;
@@ -133,7 +131,6 @@ public:
   bool mandatory_pawn_promotion() const;
   bool mandatory_piece_promotion() const;
   bool piece_demotion() const;
-  bool blast_on_capture() const;
   bool endgame_eval() const;
   bool double_step_enabled() const;
   Rank double_step_rank_max() const;
@@ -172,13 +169,11 @@ public:
   bool immobility_illegal() const;
   bool gating() const;
   bool arrow_gating() const;
-  bool seirawan_gating() const;
   bool cambodian_moves() const;
   Bitboard diagonal_lines() const;
   bool pass() const;
   bool pass_on_stalemate() const;
   Bitboard promoted_soldiers(Color c) const;
-  bool makpong() const;
   EnclosingRule flip_enclosed_pieces() const;
   // winning conditions
   int n_move_rule() const;
@@ -198,13 +193,11 @@ public:
   int connect_n() const;
   CheckCount checks_remaining(Color c) const;
   MaterialCounting material_counting() const;
-  CountingRule counting_rule() const;
 
   // Variant-specific properties
   int count_in_hand(PieceType pt) const;
   int count_in_hand(Color c, PieceType pt) const;
   int count_with_hand(Color c, PieceType pt) const;
-  bool bikjang() const;
   bool allow_virtual_drop(Color c, PieceType pt) const;
 
   // Position representation
@@ -263,7 +256,6 @@ public:
 
   // Piece specific
   bool pawn_passed(Color c, Square s) const;
-  bool opposite_bishops() const;
   bool is_promoted(Square s) const;
   int  pawns_on_same_color_squares(Color c, Square s) const;
 
@@ -297,7 +289,6 @@ public:
   bool is_draw(int ply) const;
   bool has_repeated() const;
   Bitboard chased() const;
-  int counting_limit() const;
   int counting_ply(int countStarted) const;
   int rule50_count() const;
   Score psq_score() const;
@@ -452,11 +443,6 @@ inline bool Position::mandatory_piece_promotion() const {
 inline bool Position::piece_demotion() const {
   assert(var != nullptr);
   return var->pieceDemotion;
-}
-
-inline bool Position::blast_on_capture() const {
-  assert(var != nullptr);
-  return var->blastOnCapture;
 }
 
 inline bool Position::endgame_eval() const {
@@ -720,11 +706,6 @@ inline bool Position::arrow_gating() const {
   return var->arrowGating;
 }
 
-inline bool Position::seirawan_gating() const {
-  assert(var != nullptr);
-  return var->seirawanGating;
-}
-
 inline bool Position::cambodian_moves() const {
   assert(var != nullptr);
   return var->cambodianMoves;
@@ -748,11 +729,6 @@ inline bool Position::pass_on_stalemate() const {
 inline Bitboard Position::promoted_soldiers(Color c) const {
   assert(var != nullptr);
   return pieces(c, SOLDIER) & zone_bb(c, var->soldierPromotionRank, max_rank());
-}
-
-inline bool Position::makpong() const {
-  assert(var != nullptr);
-  return var->makpongRule;
 }
 
 inline int Position::n_move_rule() const {
@@ -785,8 +761,7 @@ inline Value Position::stalemate_value(int ply) const {
       while (pseudoRoyals)
       {
           Square sr = pop_lsb(pseudoRoyals);
-          if (  !(blast_on_capture() && (pseudoRoyalsTheirs & attacks_bb<KING>(sr)))
-              && attackers_to(sr, ~sideToMove))
+          if (attackers_to(sr, ~sideToMove))
               return convert_mate_value(var->checkmateValue, ply);
       }
   }
@@ -795,37 +770,6 @@ inline Value Position::stalemate_value(int ply) const {
 
 inline Value Position::checkmate_value(int ply) const {
   assert(var != nullptr);
-  // Check for illegal mate by shogi pawn drop
-  if (    var->shogiPawnDropMateIllegal
-      && !(checkers() & ~pieces(SHOGI_PAWN))
-      && !st->capturedPiece
-      &&  st->pliesFromNull > 0
-      && (st->materialKey != st->previous->materialKey))
-  {
-      return mate_in(ply);
-  }
-  // Check for shatar mate rule
-  if (var->shatarMateRule)
-  {
-      // Mate by knight is illegal
-      if (!(checkers() & ~pieces(KNIGHT)))
-          return mate_in(ply);
-
-      StateInfo* stp = st;
-      while (stp->checkersBB)
-      {
-          // Return mate score if there is at least one shak in series of checks
-          if (stp->shak)
-              return convert_mate_value(var->checkmateValue, ply);
-
-          if (stp->pliesFromNull < 2)
-              break;
-
-          stp = stp->previous->previous;
-      }
-      // Niol
-      return VALUE_DRAW;
-  }
   // Return mate value
   return convert_mate_value(var->checkmateValue, ply);
 }
@@ -895,11 +839,6 @@ inline CheckCount Position::checks_remaining(Color c) const {
 inline MaterialCounting Position::material_counting() const {
   assert(var != nullptr);
   return var->materialCounting;
-}
-
-inline CountingRule Position::counting_rule() const {
-  assert(var != nullptr);
-  return var->countingRule;
 }
 
 inline bool Position::is_immediate_game_end() const {
@@ -1034,62 +973,22 @@ inline Square Position::castling_rook_square(CastlingRights cr) const {
 }
 
 inline Bitboard Position::attacks_from(Color c, PieceType pt, Square s) const {
-  if (var->fastAttacks || var->fastAttacks2)
-      return attacks_bb(c, pt, s, byTypeBB[ALL_PIECES]) & board_bb();
 
-  PieceType movePt = pt == KING ? king_type() : pt;
+  PieceType movePt = pt == KING ? WAZIR : pt;
   Bitboard b = attacks_bb(c, movePt, s, byTypeBB[ALL_PIECES]);
   // Xiangqi soldier
   if (pt == SOLDIER && !(promoted_soldiers(c) & s))
       b &= file_bb(file_of(s));
-  // Janggi cannon restrictions
-  if (pt == JANGGI_CANNON)
-  {
-      b &= ~pieces(pt);
-      b &= attacks_bb(c, pt, s, pieces() ^ pieces(pt));
-  }
-  // Janggi palace moves
-  if (diagonal_lines() & s)
-  {
-      PieceType diagType = movePt == WAZIR ? FERS : movePt == SOLDIER ? PAWN : movePt == ROOK ? BISHOP : NO_PIECE_TYPE;
-      if (diagType)
-          b |= attacks_bb(c, diagType, s, pieces()) & diagonal_lines();
-      else if (movePt == JANGGI_CANNON)
-          b |=  rider_attacks_bb<RIDER_CANNON_DIAG>(s, pieces())
-              & rider_attacks_bb<RIDER_CANNON_DIAG>(s, pieces() ^ pieces(pt))
-              & ~pieces(pt)
-              & diagonal_lines();
-  }
   return b & board_bb(c, pt);
 }
 
 inline Bitboard Position::moves_from(Color c, PieceType pt, Square s) const {
-  if (var->fastAttacks || var->fastAttacks2)
-      return moves_bb(c, pt, s, byTypeBB[ALL_PIECES]) & board_bb();
 
-  PieceType movePt = pt == KING ? king_type() : pt;
+  PieceType movePt = pt == KING ? WAZIR : pt;
   Bitboard b = moves_bb(c, movePt, s, byTypeBB[ALL_PIECES]);
   // Xiangqi soldier
   if (pt == SOLDIER && !(promoted_soldiers(c) & s))
       b &= file_bb(file_of(s));
-  // Janggi cannon restrictions
-  if (pt == JANGGI_CANNON)
-  {
-      b &= ~pieces(pt);
-      b &= attacks_bb(c, pt, s, pieces() ^ pieces(pt));
-  }
-  // Janggi palace moves
-  if (diagonal_lines() & s)
-  {
-      PieceType diagType = movePt == WAZIR ? FERS : movePt == SOLDIER ? PAWN : movePt == ROOK ? BISHOP : NO_PIECE_TYPE;
-      if (diagType)
-          b |= attacks_bb(c, diagType, s, pieces()) & diagonal_lines();
-      else if (movePt == JANGGI_CANNON)
-          b |=  rider_attacks_bb<RIDER_CANNON_DIAG>(s, pieces())
-              & rider_attacks_bb<RIDER_CANNON_DIAG>(s, pieces() ^ pieces(pt))
-              & ~pieces(pt)
-              & diagonal_lines();
-  }
   return b & board_bb(c, pt);
 }
 
@@ -1168,12 +1067,6 @@ inline int Position::counting_ply(int countStarted) const {
 
 inline int Position::rule50_count() const {
   return st->rule50;
-}
-
-inline bool Position::opposite_bishops() const {
-  return   count<BISHOP>(WHITE) == 1
-        && count<BISHOP>(BLACK) == 1
-        && opposite_colors(square<BISHOP>(WHITE), square<BISHOP>(BLACK));
 }
 
 inline bool Position::is_promoted(Square s) const {
@@ -1265,10 +1158,6 @@ inline int Position::count_with_hand(Color c, PieceType pt) const {
   return pieceCount[make_piece(c, pt)] + pieceCountInHand[c][pt];
 }
 
-inline bool Position::bikjang() const {
-  return st->bikjang;
-}
-
 inline bool Position::allow_virtual_drop(Color c, PieceType pt) const {
   assert(two_boards());
   // Do we allow a virtual drop?
@@ -1285,16 +1174,6 @@ inline Value Position::material_counting_result() const {
   Value result;
   switch (var->materialCounting)
   {
-  case JANGGI_MATERIAL:
-      materialCount =  weigth_count(ROOK, 13)
-                     + weigth_count(JANGGI_CANNON, 7)
-                     + weigth_count(HORSE, 5)
-                     + weigth_count(JANGGI_ELEPHANT, 3)
-                     + weigth_count(WAZIR, 3)
-                     + weigth_count(SOLDIER, 2)
-                     - 1;
-      result = materialCount > 0 ? VALUE_MATE : -VALUE_MATE;
-      break;
   case UNWEIGHTED_MATERIAL:
       result =  count(WHITE, ALL_PIECES) > count(BLACK, ALL_PIECES) ?  VALUE_MATE
               : count(WHITE, ALL_PIECES) < count(BLACK, ALL_PIECES) ? -VALUE_MATE

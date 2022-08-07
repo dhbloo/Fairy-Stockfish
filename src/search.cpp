@@ -575,7 +575,7 @@ namespace {
     Move ttMove, move, excludedMove, bestMove;
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
-    bool givesCheck, improving, didLMR, priorCapture;
+    bool givesCheck, improving, didLMR, priorCapture, singularQuietLMR;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning,
          ttCapture;
     Piece movedPiece;
@@ -918,7 +918,7 @@ moves_loop: // When in check, search starts from here
                                       ss->killers);
 
     value = bestValue;
-    moveCountPruning = false;
+    moveCountPruning = singularQuietLMR = false;
 
     // Indicate PvNodes that will probably fail low if the node was searched
     // at a depth equal or greater than the current depth, and the result of this search was a fail low.
@@ -1012,7 +1012,7 @@ moves_loop: // When in check, search starts from here
                   && history < -3875 * (depth - 1))
                   continue;
 
-              history += thisThread->mainHistory[us][from_to(move)];
+              history += 2 * thisThread->mainHistory[us][from_to(move)];
 
               // Futility pruning: parent node (~9 Elo)
               if (   !ss->inCheck
@@ -1057,6 +1057,7 @@ moves_loop: // When in check, search starts from here
               if (value < singularBeta)
               {
                   extension = 1;
+                  singularQuietLMR = !ttCapture;
 
                   // Avoid search explosion by limiting the number of double extensions
                   if (  !PvNode
@@ -1156,11 +1157,15 @@ moves_loop: // When in check, search starts from here
           if (PvNode)
               r -= 1 + 15 / (3 + depth);
 
+          // Decrease reduction if ttMove has been singularly extended (~1 Elo)
+          if (singularQuietLMR)
+              r--;
+
           // Increase reduction if next ply has a lot of fail high else reset count to 0
           if (!PvNode)
               r += (ss+1)->cutoffCnt / 3;
 
-          ss->statScore =  thisThread->mainHistory[us][from_to(move)]
+          ss->statScore = 2 * thisThread->mainHistory[us][from_to(move)]
                          + (*contHist[0])[history_slot(movedPiece)][to_sq(move)]
                          + (*contHist[1])[history_slot(movedPiece)][to_sq(move)]
                          + (*contHist[3])[history_slot(movedPiece)][to_sq(move)]

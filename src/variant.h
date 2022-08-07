@@ -97,13 +97,10 @@ struct Variant {
   bool immobilityIllegal = false;
   bool gating = false;
   bool arrowGating = false;
-  bool seirawanGating = false;
   bool cambodianMoves = false;
   Bitboard diagonalLines = 0;
   bool pass = false;
   bool passOnStalemate = false;
-  bool makpongRule = false;
-  bool flyingGeneral = false;
   Rank soldierPromotionRank = RANK_6;
   EnclosingRule flipEnclosedPieces = NO_ENCLOSING;
   bool freeDrops = false;
@@ -119,9 +116,6 @@ struct Variant {
   Value stalemateValue = VALUE_DRAW;
   bool stalematePieceCount = false; // multiply stalemate value by sign(count(~stm) - count(stm))
   Value checkmateValue = -VALUE_MATE;
-  bool shogiPawnDropMateIllegal = false;
-  bool shatarMateRule = false;
-  bool bikjangRule = false;
   Value extinctionValue = VALUE_NONE;
   bool extinctionClaim = false;
   bool extinctionPseudoRoyal = false;
@@ -132,14 +126,9 @@ struct Variant {
   Bitboard whiteFlag = 0;
   Bitboard blackFlag = 0;
   bool flagMove = false;
-  bool checkCounting = false;
   int connectN = 0;
   MaterialCounting materialCounting = NO_MATERIAL_COUNTING;
-  CountingRule countingRule = NO_COUNTING;
 
-  // Derived properties
-  bool fastAttacks = true;
-  bool fastAttacks2 = true;
   std::string nnueAlias = "";
   PieceType nnueKing = KING;
   int nnueDimensions;
@@ -149,7 +138,6 @@ struct Variant {
   int kingSquareIndex[SQUARE_NB];
   int nnueMaxPieces;
   bool endgameEval = false;
-  bool shogiStylePromotions = false;
 
   void add_piece(PieceType pt, char c, std::string betza = "", char c2 = ' ') {
       pieceToChar[make_piece(WHITE, pt)] = toupper(c);
@@ -188,24 +176,6 @@ struct Variant {
 
   // Pre-calculate derived properties
   Variant* conclude() {
-      fastAttacks = std::all_of(pieceTypes.begin(), pieceTypes.end(), [this](PieceType pt) {
-                                    return (   pt < FAIRY_PIECES
-                                            || pt == COMMONER || pt == IMMOBILE_PIECE
-                                            || pt == ARCHBISHOP || pt == CHANCELLOR
-                                            || (pt == KING && kingType == KING))
-                                          && !(mobilityRegion[WHITE][pt] || mobilityRegion[BLACK][pt]);
-                                })
-                    && !cambodianMoves
-                    && !diagonalLines;
-      fastAttacks2 = std::all_of(pieceTypes.begin(), pieceTypes.end(), [this](PieceType pt) {
-                                    return (   pt < FAIRY_PIECES
-                                            || pt == COMMONER || pt == FERS || pt == WAZIR
-                                            || pt == GOLD || pt == SILVER || pt == LANCE
-                                            || (pt == KING && kingType == KING))
-                                          && !(mobilityRegion[WHITE][pt] || mobilityRegion[BLACK][pt]);
-                                })
-                    && !cambodianMoves
-                    && !diagonalLines;
 
       // Initialize calculated NNUE properties
       nnueKing =  pieceTypes.find(KING) != pieceTypes.end() ? KING
@@ -282,7 +252,6 @@ struct Variant {
               boardbb[c][pt] = mobilityRegion[c][pt] ? mobilityRegion[c][pt] & board_bb : board_bb;
           }
   }
-
 };
 
 class VariantMap : public std::map<std::string, const Variant*> {

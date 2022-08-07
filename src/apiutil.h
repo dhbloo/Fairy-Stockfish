@@ -262,9 +262,6 @@ inline bool has_insufficient_material(Color c, const Position& pos) {
 
     // Restricted pieces
     Bitboard restricted = pos.pieces(~c, KING);
-    // Atomic kings can not help checkmating
-    if (pos.extinction_pseudo_royal() && pos.blast_on_capture() && pos.extinction_piece_types().find(COMMONER) != pos.extinction_piece_types().end())
-        restricted |= pos.pieces(c, COMMONER);
     for (PieceType pt : pos.piece_types())
         if (pt == KING || !(pos.board_bb(c, pt) & pos.board_bb(~c, KING)))
             restricted |= pos.pieces(c, pt);
@@ -300,7 +297,6 @@ inline bool is_check(const Position& pos) {
 namespace FEN {
 
 enum FenValidation : int {
-    FEN_INVALID_COUNTING_RULE = -14,
     FEN_INVALID_CHECK_COUNT = -13,
     FEN_INVALID_NB_PARTS = -11,
     FEN_INVALID_CHAR = -10,
@@ -781,8 +777,6 @@ inline std::string get_valid_special_chars(const Variant* v) {
     // Whether or not '-', '+', '~', '[', ']' are valid depends on the variant being played.
     if (!v->promotionPieceTypes.empty())
         validSpecialCharactersFirstField += '~';
-    if (!v->freeDrops && (v->pieceDrops || v->seirawanGating || v->arrowGating))
-        validSpecialCharactersFirstField += "[-]";
     return validSpecialCharactersFirstField;
 }
 
@@ -801,7 +795,7 @@ inline FenValidation validate_fen(const std::string& fen, const Variant* v, bool
     std::vector<std::string> startFenParts = get_fen_parts(v->startFen, ' ');
 
     // check for number of parts
-    const unsigned int maxNumberFenParts = 6 + v->checkCounting;
+    const unsigned int maxNumberFenParts = 6;
     if (fenParts.size() < 1 || fenParts.size() > maxNumberFenParts)
     {
         std::cerr << "Invalid number of fen parts. Expected: >= 1 and <= " << maxNumberFenParts
@@ -825,11 +819,6 @@ inline FenValidation validate_fen(const std::string& fen, const Variant* v, bool
 
     // check for pocket
     std::string pocket = "";
-    if (v->pieceDrops || v->seirawanGating || v->arrowGating)
-    {
-        if (check_pocket_info(fenParts[0], nbRanks, v, pocket) == NOK)
-            return FEN_INVALID_POCKET_INFO;
-    }
 
     // check for number of kings
     if (v->pieceTypes.find(KING) != v->pieceTypes.end())
@@ -905,20 +894,6 @@ inline FenValidation validate_fen(const std::string& fen, const Variant* v, bool
     // check check count
     unsigned int optionalInbetweenFields = 2 * !skipCastlingAndEp;
     unsigned int optionalTrailingFields = 0;
-    if (fenParts.size() >= 3 + optionalInbetweenFields && v->checkCounting && fenParts.size() % 2)
-    {
-        if (check_check_count(fenParts[2 + optionalInbetweenFields]) == NOK)
-        {
-            // allow valid lichess style check as alternative
-            if (fenParts.size() < 5 + optionalInbetweenFields || check_lichess_check_count(fenParts[fenParts.size() - 1]) == NOK)
-                return FEN_INVALID_CHECK_COUNT;
-            else
-                optionalTrailingFields++;
-        }
-        else
-            optionalInbetweenFields++;
-    }
-
     // 6) Part
     // check half move counter
     if (fenParts.size() >= 3 + optionalInbetweenFields && !check_digit_field(fenParts[fenParts.size() - 2 - optionalTrailingFields]))
