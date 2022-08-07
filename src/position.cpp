@@ -580,28 +580,38 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
   Bitboard snipers = 0;
   Bitboard slidingSnipers = 0;
 
-      for (PieceType pt : piece_types())
+  auto add_snipers = [&](PieceType pt) {
+      Bitboard b = sliders & (PseudoAttacks[~c][pt][s] ^ LeaperAttacks[~c][pt][s]) & pieces(c, pt);
+      if (b)
       {
-          Bitboard b = sliders & (PseudoAttacks[~c][pt][s] ^ LeaperAttacks[~c][pt][s]) & pieces(c, pt);
-          if (b)
+          // Consider asymmetrical moves (e.g., horse)
+          if (AttackRiderTypes[pt] & ASYMMETRICAL_RIDERS)
           {
-              // Consider asymmetrical moves (e.g., horse)
-              if (AttackRiderTypes[pt] & ASYMMETRICAL_RIDERS)
+              Bitboard asymmetricals = PseudoAttacks[~c][pt][s] & pieces(c, pt);
+              while (asymmetricals)
               {
-                  Bitboard asymmetricals = PseudoAttacks[~c][pt][s] & pieces(c, pt);
-                  while (asymmetricals)
-                  {
-                      Square s2 = pop_lsb(asymmetricals);
-                      if (!(attacks_from(c, pt, s2) & s))
-                          snipers |= s2;
-                  }
+                  Square s2 = pop_lsb(asymmetricals);
+                  if (!(attacks_from(c, pt, s2) & s))
+                      snipers |= s2;
               }
-              else
-                  snipers |= b & ~attacks_bb(~c, pt, s, pieces());
-              if (AttackRiderTypes[pt] & ~HOPPING_RIDERS)
-                  slidingSnipers |= snipers & pieces(pt);
           }
+          else
+              snipers |= b & ~attacks_bb(~c, pt, s, pieces());
+          if (AttackRiderTypes[pt] & ~HOPPING_RIDERS)
+              slidingSnipers |= snipers & pieces(pt);
       }
+  };
+
+  assert(piece_types().size() == 7);
+  add_snipers(PieceType::ROOK);
+  add_snipers(PieceType::FERS);
+  add_snipers(PieceType::CANNON);
+  add_snipers(PieceType::SOLDIER);
+  add_snipers(PieceType::HORSE);
+  add_snipers(PieceType::ELEPHANT);
+  add_snipers(PieceType::KING);
+
+
   Bitboard occupancy = pieces() ^ slidingSnipers;
 
   while (snipers)

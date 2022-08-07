@@ -293,6 +293,7 @@ void UCI::loop(int argc, char* argv[]) {
   string token, cmd;
   StateListPtr states(new std::deque<StateInfo>(1));
 
+  Options["UCI_Variant"].set_default("xiangqi");
   assert(variants.find(Options["UCI_Variant"])->second != nullptr);
   pos.set(variants.find(Options["UCI_Variant"])->second, variants.find(Options["UCI_Variant"])->second->startFen, &states->back(), Threads.main());
 
