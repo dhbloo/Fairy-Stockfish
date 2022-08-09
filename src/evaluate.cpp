@@ -976,9 +976,6 @@ namespace {
     int weight = pos.count<ALL_PIECES>(Us) - 3 + std::min(pe->blocked_count(), 9);
     Score score = make_score(bonus * weight * weight / 16, 0);
 
-    if (pos.capture_the_flag(Us))
-        score += make_score(200, 200) * popcount(behind & safe & pos.capture_the_flag(Us));
-
     if constexpr (T)
         Trace::add(SPACE, Us, score);
 
@@ -995,46 +992,6 @@ namespace {
     constexpr Direction Down = pawn_push(Them);
 
     Score score = SCORE_ZERO;
-
-    // Capture the flag
-    if (pos.capture_the_flag(Us))
-    {
-        PieceType ptCtf = pos.capture_the_flag_piece();
-        Bitboard ctfPieces = pos.pieces(Us, ptCtf);
-        Bitboard ctfTargets = pos.capture_the_flag(Us) & pos.board_bb();
-        Bitboard onHold = 0;
-        Bitboard onHold2 = 0;
-        Bitboard processed = 0;
-        Bitboard blocked = pos.pieces(Us, PAWN) | attackedBy[Them][ALL_PIECES];
-        Bitboard doubleBlocked =  attackedBy2[Them]
-                                | (pos.pieces(Us, PAWN) & (shift<Down>(pos.pieces()) | attackedBy[Them][ALL_PIECES]))
-                                | (pos.pieces(Them) & pe->pawn_attacks(Them))
-                                | (pawn_attacks_bb<Them>(pos.pieces(Them, PAWN) & pe->pawn_attacks(Them)));
-        Bitboard inaccessible = pos.pieces(Us, PAWN) & shift<Down>(pos.pieces(Them, PAWN));
-        // Traverse all paths of the CTF pieces to the CTF targets.
-        // Put squares that are attacked or occupied on hold for one iteration.
-        // This reflects that likely a move will be needed to block or capture the attack.
-        for (int dist = 0; (ctfPieces || onHold || onHold2) && (ctfTargets & ~processed); dist++)
-        {
-            int wins = popcount(ctfTargets & ctfPieces);
-            if (wins)
-                score += make_score(4000, 4000) * wins / (wins + dist * dist);
-            Bitboard current = ctfPieces & ~ctfTargets;
-            processed |= ctfPieces;
-            ctfPieces = onHold & ~processed;
-            onHold = onHold2 & ~processed;
-            onHold2 = 0;
-            while (current)
-            {
-                Square s = pop_lsb(current);
-                Bitboard attacks = (  (PseudoAttacks[Us][ptCtf][s] & pos.pieces())
-                                    | (PseudoMoves[Us][ptCtf][s] & ~pos.pieces())) & ~processed & pos.board_bb();
-                ctfPieces |= attacks & ~blocked;
-                onHold |= attacks & ~doubleBlocked;
-                onHold2 |= attacks & ~inaccessible;
-            }
-        }
-    }
 
     // Extinction
     if (pos.extinction_value() != VALUE_NONE)

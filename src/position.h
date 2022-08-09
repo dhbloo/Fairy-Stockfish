@@ -185,8 +185,6 @@ public:
   int extinction_piece_count() const;
   int extinction_opponent_piece_count() const;
   bool extinction_pseudo_royal() const;
-  PieceType capture_the_flag_piece() const;
-  Bitboard capture_the_flag(Color c) const;
   bool flag_move() const;
   int connect_n() const;
   CheckCount checks_remaining(Color c) const;
@@ -797,16 +795,6 @@ inline int Position::extinction_opponent_piece_count() const {
 inline bool Position::extinction_pseudo_royal() const {
   assert(var != nullptr);
   return var->extinctionPseudoRoyal;
-}
-
-inline PieceType Position::capture_the_flag_piece() const {
-  assert(var != nullptr);
-  return var->flagPiece;
-}
-
-inline Bitboard Position::capture_the_flag(Color c) const {
-  assert(var != nullptr);
-  return c == WHITE ? var->whiteFlag : var->blackFlag;
 }
 
 inline bool Position::flag_move() const {

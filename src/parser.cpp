@@ -351,9 +351,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     }
     parse_attribute("extinctionPieceCount", v->extinctionPieceCount);
     parse_attribute("extinctionOpponentPieceCount", v->extinctionOpponentPieceCount);
-    parse_attribute("flagPiece", v->flagPiece, v->pieceToChar);
-    parse_attribute("whiteFlag", v->whiteFlag);
-    parse_attribute("blackFlag", v->blackFlag);
     parse_attribute("flagMove", v->flagMove);
     parse_attribute("connectN", v->connectN);
     parse_attribute("materialCounting", v->materialCounting);

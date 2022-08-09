@@ -119,9 +119,6 @@ struct Variant {
   std::set<PieceType> extinctionPieceTypes = {};
   int extinctionPieceCount = 0;
   int extinctionOpponentPieceCount = 0;
-  PieceType flagPiece = NO_PIECE_TYPE;
-  Bitboard whiteFlag = 0;
-  Bitboard blackFlag = 0;
   bool flagMove = false;
   int connectN = 0;
   MaterialCounting materialCounting = NO_MATERIAL_COUNTING;

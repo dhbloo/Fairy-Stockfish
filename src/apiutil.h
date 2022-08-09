@@ -256,8 +256,7 @@ inline bool has_insufficient_material(Color c, const Position& pos) {
 
     // Other win rules
     if (   pos.count_in_hand(c, ALL_PIECES)
-        || (pos.extinction_value() != VALUE_NONE && !pos.extinction_pseudo_royal())
-        || (pos.capture_the_flag_piece() && pos.count(c, pos.capture_the_flag_piece())))
+        || (pos.extinction_value() != VALUE_NONE && !pos.extinction_pseudo_royal()))
         return false;
 
     // Restricted pieces
