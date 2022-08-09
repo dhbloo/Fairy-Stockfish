@@ -80,13 +80,9 @@
 
 #if defined(USE_PEXT)
 #  include <immintrin.h> // Header for _pext_u64() intrinsic
-#  ifdef LARGEBOARDS
-#    define pext(b, m) (_pext_u64(b, m) ^ (_pext_u64(b >> 64, m >> 64) << popcount((m << 64) >> 64)))
-#  else
-#    define pext(b, m) _pext_u64(b, m)
-#  endif
+#  define pext(b, m, s) (_pext_u64(b, m) ^ (_pext_u64(b >> 64, m >> 64) << s))
 #else
-#  define pext(b, m) 0
+#  define pext(b, m, s) 0
 #endif
 
 namespace Stockfish {

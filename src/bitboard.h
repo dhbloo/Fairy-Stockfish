@@ -129,7 +129,7 @@ struct Magic {
   unsigned index(Bitboard occupied) const {
 
     if (HasPext)
-        return unsigned(pext(occupied, mask));
+        return unsigned(pext(occupied, mask, shift));
 
 #ifdef LARGEBOARDS
     return unsigned(((occupied & mask) * magic) >> shift);

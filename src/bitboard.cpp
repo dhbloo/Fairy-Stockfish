@@ -416,7 +416,11 @@ namespace {
         Magic& m = magics[s];
         // The mask for hoppers is unlimited distance, even if the hopper is limited distance (e.g., grasshopper)
         m.mask  = (MT == LAME_LEAPER ? lame_leaper_path(directions, s) : sliding_attack<MT == HOPPER ? UNLIMITED_RIDER : MT>(directions, s, 0)) & ~edges;
-        m.shift = 128 - popcount(m.mask);
+        
+        if (HasPext)
+            m.shift = popcount((m.mask << 64) >> 64);
+        else
+            m.shift = 128 - popcount(m.mask);
 
         // Set the offset for the attacks table of the square. We have individual
         // table sizes for each square with "Fancy Magic Bitboards".
@@ -430,7 +434,7 @@ namespace {
             reference[size] = MT == LAME_LEAPER ? lame_leaper_attack(directions, s, b) : sliding_attack<MT>(directions, s, b);
 
             if (HasPext)
-                m.attacks[pext(b, m.mask)] = reference[size];
+                m.attacks[pext(b, m.mask, m.shift)] = reference[size];
 
             size++;
             b = (b - m.mask) & m.mask;
@@ -503,7 +507,10 @@ namespace {
             m.mask  = horse_path(directions, s);
         else
             m.mask  = (MT == LAME_LEAPER ? lame_leaper_path(directions, s) : sliding_attack<MT == HOPPER ? UNLIMITED_RIDER : MT>(directions, s, 0)) & ~edges;
-        m.shift = 128 - popcount(m.mask);
+        if (HasPext)
+            m.shift = popcount((m.mask << 64) >> 64);
+        else
+            m.shift = 128 - popcount(m.mask);
 
         // Set the offset for the attacks table of the square. We have individual
         // table sizes for each square with "Fancy Magic Bitboards".
@@ -520,7 +527,7 @@ namespace {
                 reference[size] = MT == LAME_LEAPER ? lame_leaper_attack(directions, s, b) : sliding_attack<MT>(directions, s, b);
 
             if (HasPext)
-                m.attacks[pext(b, m.mask)] = reference[size];
+                m.attacks[pext(b, m.mask, m.shift)] = reference[size];
 
             size++;
             b = (b - m.mask) & m.mask;
