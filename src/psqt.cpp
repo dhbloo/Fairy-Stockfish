@@ -41,8 +41,8 @@ Value PieceValue[PHASE_NB][PIECE_NB] = {
     VALUE_ZERO, PawnValueMg, KnightValueMg, BishopValueMg, RookValueMg, QueenValueMg, FersValueMg, AlfilValueMg,
     FersAlfilValueMg, SilverValueMg, AiwokValueMg, BersValueMg, ArchbishopValueMg, ChancellorValueMg, AmazonValueMg, KnibisValueMg,
     BiskniValueMg, KnirooValueMg, RookniValueMg, ShogiPawnValueMg, LanceValueMg, ShogiKnightValueMg, GoldValueMg, DragonHorseValueMg,
-    ClobberPieceValueMg, BreakthroughPieceValueMg, ImmobilePieceValueMg, CannonPieceValueMg, SoldierValueMg, HorseValueMg, ElephantValueMg,
-    BannerValueMg, WazirValueMg, CommonerValueMg, CentaurValueMg, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
+    ClobberPieceValueMg, BreakthroughPieceValueMg, ImmobilePieceValueMg, CannonPieceValueMg, JanggiCannonPieceValueMg, SoldierValueMg, HorseValueMg, ElephantValueMg,
+    JanggiElephantValueMg, BannerValueMg, WazirValueMg, CommonerValueMg, CentaurValueMg, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
@@ -50,8 +50,8 @@ Value PieceValue[PHASE_NB][PIECE_NB] = {
     VALUE_ZERO, PawnValueMg, KnightValueMg, BishopValueMg, RookValueMg, QueenValueMg, FersValueMg, AlfilValueMg,
     FersAlfilValueMg, SilverValueMg, AiwokValueMg, BersValueMg, ArchbishopValueMg, ChancellorValueMg, AmazonValueMg, KnibisValueMg,
     BiskniValueMg, KnirooValueMg, RookniValueMg, ShogiPawnValueMg, LanceValueMg, ShogiKnightValueMg, GoldValueMg, DragonHorseValueMg,
-    ClobberPieceValueMg, BreakthroughPieceValueMg, ImmobilePieceValueMg, CannonPieceValueMg, SoldierValueMg, HorseValueMg, ElephantValueMg,
-    BannerValueMg, WazirValueMg, CommonerValueMg, CentaurValueMg, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
+    ClobberPieceValueMg, BreakthroughPieceValueMg, ImmobilePieceValueMg, CannonPieceValueMg, JanggiCannonPieceValueMg, SoldierValueMg, HorseValueMg, ElephantValueMg,
+    JanggiElephantValueMg, BannerValueMg, WazirValueMg, CommonerValueMg, CentaurValueMg, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
@@ -60,8 +60,8 @@ Value PieceValue[PHASE_NB][PIECE_NB] = {
     VALUE_ZERO, PawnValueEg, KnightValueEg, BishopValueEg, RookValueEg, QueenValueEg, FersValueEg, AlfilValueEg,
     FersAlfilValueEg, SilverValueEg, AiwokValueEg, BersValueEg, ArchbishopValueEg, ChancellorValueEg, AmazonValueEg, KnibisValueEg,
     BiskniValueEg, KnirooValueEg, RookniValueEg, ShogiPawnValueEg, LanceValueEg, ShogiKnightValueEg, GoldValueEg, DragonHorseValueEg,
-    ClobberPieceValueEg, BreakthroughPieceValueEg, ImmobilePieceValueEg, CannonPieceValueEg, SoldierValueEg, HorseValueEg, ElephantValueEg,
-    BannerValueEg, WazirValueEg, CommonerValueEg, CentaurValueEg, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
+    ClobberPieceValueEg, BreakthroughPieceValueEg, ImmobilePieceValueEg, CannonPieceValueEg, JanggiCannonPieceValueEg, SoldierValueEg, HorseValueEg, ElephantValueEg,
+    JanggiElephantValueEg, BannerValueEg, WazirValueEg, CommonerValueEg, CentaurValueEg, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
@@ -69,8 +69,8 @@ Value PieceValue[PHASE_NB][PIECE_NB] = {
     VALUE_ZERO, PawnValueEg, KnightValueEg, BishopValueEg, RookValueEg, QueenValueEg, FersValueEg, AlfilValueEg,
     FersAlfilValueEg, SilverValueEg, AiwokValueEg, BersValueEg, ArchbishopValueEg, ChancellorValueEg, AmazonValueEg, KnibisValueEg,
     BiskniValueEg, KnirooValueEg, RookniValueEg, ShogiPawnValueEg, LanceValueEg, ShogiKnightValueEg, GoldValueEg, DragonHorseValueEg,
-    ClobberPieceValueEg, BreakthroughPieceValueEg, ImmobilePieceValueEg, CannonPieceValueEg, SoldierValueEg, HorseValueEg, ElephantValueEg,
-    BannerValueEg, WazirValueEg, CommonerValueEg, CentaurValueEg, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
+    ClobberPieceValueEg, BreakthroughPieceValueEg, ImmobilePieceValueEg, CannonPieceValueEg, JanggiCannonPieceValueEg, SoldierValueEg, HorseValueEg, ElephantValueEg,
+    JanggiElephantValueEg, BannerValueEg, WazirValueEg, CommonerValueEg, CentaurValueEg, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
     VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO, VALUE_ZERO,
@@ -202,11 +202,26 @@ void init(const Variant* v) {
   for (PieceType pt = PAWN; pt <= KING; ++pt)
   {
       Piece pc = make_piece(WHITE, pt);
+
       Score score = make_score(PieceValue[MG][pc], PieceValue[EG][pc]);
       
       const PieceInfo* pi = pieceMap.find(pt)->second;
-      bool isPawn = pi->steps[MODALITY_QUIET].size() && !std::any_of(pi->steps[MODALITY_QUIET].begin(), pi->steps[MODALITY_QUIET].end(), [](const std::pair<const Direction, int>& d) { return d.first < SOUTH / 2; });
-      bool isSlowLeaper = !std::any_of(pi->steps[MODALITY_QUIET].begin(), pi->steps[MODALITY_QUIET].end(), [](const std::pair<const Direction, int>& d) { return dist(d.first) > 1; });
+      bool isSlider = pi->slider[MODALITY_QUIET].size() || pi->slider[MODALITY_CAPTURE].size() || pi->hopper[MODALITY_QUIET].size() || pi->hopper[MODALITY_CAPTURE].size();
+      bool isPawn = !isSlider && pi->steps[MODALITY_QUIET].size() && !std::any_of(pi->steps[MODALITY_QUIET].begin(), pi->steps[MODALITY_QUIET].end(), [](const std::pair<const Direction, int>& d) { return d.first < SOUTH / 2; });
+      bool isSlowLeaper = !isSlider && !std::any_of(pi->steps[MODALITY_QUIET].begin(), pi->steps[MODALITY_QUIET].end(), [](const std::pair<const Direction, int>& d) { return dist(d.first) > 1; });
+
+      // Scale slider piece values with board size
+      if (isSlider)
+      {
+          constexpr int lc = 5;
+          constexpr int rm = 5;
+          constexpr int r0 = rm + RANK_8;
+          int r1 = rm + (v->maxRank + v->maxFile) / 2;
+          int leaper = pi->steps[MODALITY_QUIET].size() + pi->steps[MODALITY_CAPTURE].size();
+          int slider = pi->slider[MODALITY_QUIET].size() + pi->slider[MODALITY_CAPTURE].size() + pi->hopper[MODALITY_QUIET].size() + pi->hopper[MODALITY_CAPTURE].size();
+          score = make_score(mg_value(score) * (lc * leaper + r1 * slider) / (lc * leaper + r0 * slider),
+                             eg_value(score) * (lc * leaper + r1 * slider) / (lc * leaper + r0 * slider));
+      }
 
       // In variants where checks are prohibited, strong pieces are less mobile, so limit their value 
       if (!v->checking)
@@ -256,6 +271,7 @@ void init(const Variant* v) {
                                  : pt <= QUEEN ? Bonus[pc][std::min(r, RANK_8)][std::min(f, FILE_D)]
                                  : pt == HORSE ? Bonus[KNIGHT][std::min(r, RANK_8)][std::min(f, FILE_D)]
                                  : pt == COMMONER && v->extinctionValue == -VALUE_MATE && v->extinctionPieceTypes.find(COMMONER) != v->extinctionPieceTypes.end() ? KingBonus[std::clamp(Rank(r - pawnRank + 1), RANK_1, RANK_8)][std::min(f, FILE_D)]
+                                 : isSlider    ? make_score(5, 5) * (2 * f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile - 1)
                                  : isPawn      ? make_score(5, 5) * (2 * f - v->maxFile)
                                                : make_score(10, 10) * (1 + isSlowLeaper) * (f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile / 2));
           // Add a penalty for unpromoted soldiers
@@ -270,7 +286,7 @@ void init(const Variant* v) {
           psq[~pc][rank_of(s) <= v->maxRank ? flip_rank(s, v->maxRank) : s] = -psq[pc][s];
       }
       // Pieces in hand
-      psq[ pc][SQ_NONE] = score + make_score(35, 10) * 2;
+      psq[ pc][SQ_NONE] = score + make_score(35, 10) * (1 + !isSlider);
       psq[~pc][SQ_NONE] = -psq[pc][SQ_NONE];
   }
 }

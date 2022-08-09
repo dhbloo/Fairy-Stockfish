@@ -119,6 +119,7 @@ struct Variant {
   std::set<PieceType> extinctionPieceTypes = {};
   int extinctionPieceCount = 0;
   int extinctionOpponentPieceCount = 0;
+  bool flagMove = false;
   int connectN = 0;
   MaterialCounting materialCounting = NO_MATERIAL_COUNTING;
 
@@ -193,16 +194,19 @@ struct Variant {
       // E.g., for xiangqi map from 0-89 to 0-8.
       // Variants might be initialized before bitboards, so do not rely on precomputed bitboards (like SquareBB).
       int nnueKingSquare = 0;
-      for (Square s = SQ_A1; s < nnueSquares; ++s)
-      {
-          Square bitboardSquare = Square(s + s / (maxFile + 1) * (FILE_MAX - maxFile));
-          if (!mobilityRegion[WHITE][nnueKing] || !mobilityRegion[BLACK][nnueKing]
-              || (mobilityRegion[WHITE][nnueKing] & make_bitboard(bitboardSquare))
-              || (mobilityRegion[BLACK][nnueKing] & make_bitboard(relative_square(BLACK, bitboardSquare, RANK_10))))
+      if (nnueKing)
+          for (Square s = SQ_A1; s < nnueSquares; ++s)
           {
-              kingSquareIndex[s] = nnueKingSquare++ * nnuePieceIndices;
+              Square bitboardSquare = Square(s + s / (maxFile + 1) * (FILE_MAX - maxFile));
+              if (   !mobilityRegion[WHITE][nnueKing] || !mobilityRegion[BLACK][nnueKing]
+                  || (mobilityRegion[WHITE][nnueKing] & make_bitboard(bitboardSquare))
+                  || (mobilityRegion[BLACK][nnueKing] & make_bitboard(relative_square(BLACK, bitboardSquare, RANK_10))))
+              {
+                  kingSquareIndex[s] = nnueKingSquare++ * nnuePieceIndices;
+              }
           }
-      }
+      else
+          kingSquareIndex[SQ_A1] = nnueKingSquare++ * nnuePieceIndices;
       nnueDimensions = nnueKingSquare * nnuePieceIndices;
 
       // Determine maximum piece count

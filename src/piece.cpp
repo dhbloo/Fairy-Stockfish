@@ -171,6 +171,12 @@ namespace {
       }
       return p;
   }
+  // Special multi-leg betza description for Janggi elephant
+  PieceInfo* janggi_elephant_piece() {
+      PieceInfo* p = from_betza("nZ", "janggiElephant");
+      p->betza = "mafsmafW"; // for compatiblity with XBoard/Winboard
+      return p;
+  }
 }
 
 void PieceMap::init(const Variant* v) {
@@ -202,9 +208,11 @@ void PieceMap::init(const Variant* v) {
   add(BREAKTHROUGH_PIECE, from_betza("fmWfF", "breakthrough"));
   add(IMMOBILE_PIECE, from_betza("", "immobile"));
   add(CANNON, from_betza("mRcpR", "cannon"));
+  add(JANGGI_CANNON, from_betza("pR", "janggiCannon"));
   add(SOLDIER, from_betza("fsW", "soldier"));
   add(HORSE, from_betza("nN", "horse"));
   add(ELEPHANT, from_betza("nA", "elephant"));
+  add(JANGGI_ELEPHANT, janggi_elephant_piece());
   add(BANNER, from_betza("RcpRnN", "banner"));
   add(WAZIR, from_betza("W", "wazir"));
   add(COMMONER, from_betza("K", "commoner"));

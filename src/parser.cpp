@@ -79,11 +79,12 @@ namespace {
     }
 
     template <> bool set(const std::string& value, MaterialCounting& target) {
-        target =  value == "unweighted" ? UNWEIGHTED_MATERIAL
+        target =  value == "janggi"  ? JANGGI_MATERIAL
+                : value == "unweighted" ? UNWEIGHTED_MATERIAL
                 : value == "whitedrawodds" ? WHITE_DRAW_ODDS
                 : value == "blackdrawodds" ? BLACK_DRAW_ODDS
                 : NO_MATERIAL_COUNTING;
-        return   value == "unweighted"
+        return   value == "janggi" || value == "unweighted"
               || value == "whitedrawodds" || value == "blackdrawodds" || value == "none";
     }
 
@@ -350,6 +351,7 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     }
     parse_attribute("extinctionPieceCount", v->extinctionPieceCount);
     parse_attribute("extinctionOpponentPieceCount", v->extinctionOpponentPieceCount);
+    parse_attribute("flagMove", v->flagMove);
     parse_attribute("connectN", v->connectN);
     parse_attribute("materialCounting", v->materialCounting);
 
