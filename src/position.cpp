@@ -586,15 +586,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
       {
           // Consider asymmetrical moves (e.g., horse)
           if (AttackRiderTypes[pt] & ASYMMETRICAL_RIDERS)
-          {
-              Bitboard asymmetricals = PseudoAttacks[~c][pt][s] & pieces(c, pt);
-              while (asymmetricals)
-              {
-                  Square s2 = pop_lsb(asymmetricals);
-                  if (!(attacks_from(c, pt, s2) & s))
-                      snipers |= s2;
-              }
-          }
+              snipers |= b & ~attacks_by_horse(s, pieces());
           else
               snipers |= b & ~attacks_bb(~c, pt, s, pieces());
           if (AttackRiderTypes[pt] & ~HOPPING_RIDERS)
@@ -643,15 +635,7 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied, Color c) const {
       PieceType move_pt = pt == KING ? king_type() : pt;
       // Consider asymmetrical moves (e.g., horse)
       if (AttackRiderTypes[move_pt] & ASYMMETRICAL_RIDERS)
-      {
-          Bitboard asymmetricals = PseudoAttacks[~c][move_pt][s] & pieces(c, pt);
-          while (asymmetricals)
-          {
-              Square s2 = pop_lsb(asymmetricals);
-              if (attacks_bb(c, move_pt, s2, occupied) & s)
-                  b |= s2;
-          }
-      }
+          b |= attacks_by_horse(s, occupied) & pieces(c, pt);
       else
           b |= attacks_bb(~c, move_pt, s, occupied) & pieces(c, pt);
     }

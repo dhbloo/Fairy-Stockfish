@@ -46,6 +46,7 @@ Magic BishopMagics[SQUARE_NB];
 Magic CannonMagicsH[SQUARE_NB];
 Magic CannonMagicsV[SQUARE_NB];
 Magic HorseMagics[SQUARE_NB];
+Magic ByHorseMagics[SQUARE_NB];
 Magic ElephantMagics[SQUARE_NB];
 Magic JanggiElephantMagics[SQUARE_NB];
 Magic CannonDiagMagics[SQUARE_NB];
@@ -69,6 +70,7 @@ namespace {
   Bitboard CannonTableH[0x11800];  // To store horizontal cannon attacks
   Bitboard CannonTableV[0x4800];  // To store vertical cannon attacks
   Bitboard HorseTable[0x500];  // To store horse attacks
+  Bitboard ByHorseTable[0x1000]; // To store attacks by horse
   Bitboard ElephantTable[0x400];  // To store elephant attacks
   Bitboard JanggiElephantTable[0x1C000];  // To store janggi elephant attacks
   Bitboard CannonDiagTable[0x33C00]; // To store diagonal cannon attacks
@@ -107,14 +109,13 @@ namespace {
   const std::map<Direction, int> GrasshopperDirectionsH { {EAST, 1}, {WEST, 1} };
   const std::map<Direction, int> GrasshopperDirectionsD { {NORTH_EAST, 1}, {SOUTH_EAST, 1}, {SOUTH_WEST, 1}, {NORTH_WEST, 1} };
 
-  enum MovementType { RIDER, HOPPER, LAME_LEAPER, UNLIMITED_RIDER };
+  enum MovementType { RIDER, HOPPER, LAME_LEAPER, UNLIMITED_RIDER, BY_HORSE };
 
   template <MovementType MT>
-#ifdef PRECOMPUTED_MAGICS
   void init_magics(Bitboard table[], Magic magics[], std::map<Direction, int> directions, const Bitboard magicsInit[]);
-#else
+
+  template <MovementType MT>
   void init_magics(Bitboard table[], Magic magics[], std::map<Direction, int> directions);
-#endif
 
   template <MovementType MT>
   Bitboard sliding_attack(std::map<Direction, int> directions, Square sq, Bitboard occupied, Color c = WHITE) {
@@ -173,10 +174,27 @@ namespace {
     return b;
   }
 
+  Bitboard horse_path(Direction d, Square s) {
+    Square to = s + d;
+    Bitboard b = 0;
+    if (!is_ok(to) || distance(s, to) >= 4)
+        return b;
+
+    // use lame_leaper_path but in a reversed order
+    return lame_leaper_path(-d, to);
+  }
+
   Bitboard lame_leaper_path(std::map<Direction, int> directions, Square s) {
     Bitboard b = 0;
     for (const auto& i : directions)
         b |= lame_leaper_path(i.first, s);
+    return b;
+  }
+
+  Bitboard horse_path(std::map<Direction, int> directions, Square s) {
+    Bitboard b = 0;
+    for (const auto& i : directions)
+        b |= horse_path(i.first, s);
     return b;
   }
 
@@ -186,6 +204,17 @@ namespace {
     {
         Square to = s + i.first;
         if (is_ok(to) && distance(s, to) < 4 && !(lame_leaper_path(i.first, s) & occupied))
+            b |= to;
+    }
+    return b;
+  }
+
+  Bitboard horse_attack(std::map<Direction, int> directions, Square s, Bitboard occupied) {
+    Bitboard b = 0;
+    for (const auto& i : directions)
+    {
+        Square to = s + i.first;
+        if (is_ok(to) && distance(s, to) < 4 && !(horse_path(i.first, s) & occupied))
             b |= to;
     }
     return b;
@@ -285,6 +314,8 @@ void Bitboards::init_pieces() {
               }
           }
       }
+
+
   }
 }
 
@@ -338,6 +369,8 @@ void Bitboards::init() {
   init_magics<HOPPER>(GrasshopperTableD, GrasshopperMagicsD, GrasshopperDirectionsD);
 #endif
 
+  init_magics<BY_HORSE>(ByHorseTable, ByHorseMagics, HorseDirections);
+
   init_pieces();
 
   for (Square s1 = SQ_A1; s1 <= SQ_MAX; ++s1)
@@ -363,23 +396,7 @@ namespace {
   // called "fancy" approach.
 
   template <MovementType MT>
-#ifdef PRECOMPUTED_MAGICS
   void init_magics(Bitboard table[], Magic magics[], std::map<Direction, int> directions, const Bitboard magicsInit[]) {
-#else
-  void init_magics(Bitboard table[], Magic magics[], std::map<Direction, int> directions) {
-#endif
-
-    // Optimal PRNG seeds to pick the correct magics in the shortest time
-#ifndef PRECOMPUTED_MAGICS
-#ifdef LARGEBOARDS
-    int seeds[][RANK_NB] = { { 734, 10316, 55013, 32803, 12281, 15100,  16645, 255, 346, 89123 },
-                             { 734, 10316, 55013, 32803, 12281, 15100,  16645, 255, 346, 89123 } };
-#else
-    int seeds[][RANK_NB] = { { 8977, 44560, 54343, 38998,  5731, 95205, 104912, 17020 },
-                             {  728, 10316, 55013, 32803, 12281, 15100,  16645,   255 } };
-#endif
-#endif
-
     Bitboard* occupancy = new Bitboard[1 << (FILE_NB + RANK_NB - 4)];
     Bitboard* reference = new Bitboard[1 << (FILE_NB + RANK_NB - 4)];
     Bitboard edges, b;
@@ -399,11 +416,7 @@ namespace {
         Magic& m = magics[s];
         // The mask for hoppers is unlimited distance, even if the hopper is limited distance (e.g., grasshopper)
         m.mask  = (MT == LAME_LEAPER ? lame_leaper_path(directions, s) : sliding_attack<MT == HOPPER ? UNLIMITED_RIDER : MT>(directions, s, 0)) & ~edges;
-#ifdef LARGEBOARDS
         m.shift = 128 - popcount(m.mask);
-#else
-        m.shift = (Is64Bit ? 64 : 32) - popcount(m.mask);
-#endif
 
         // Set the offset for the attacks table of the square. We have individual
         // table sizes for each square with "Fancy Magic Bitboards".
@@ -426,9 +439,97 @@ namespace {
         if (HasPext)
             continue;
 
-#ifndef PRECOMPUTED_MAGICS
+        // Find a magic for square 's' picking up an (almost) random number
+        // until we find the one that passes the verification test.
+        for (int i = 0; i < size; )
+        {
+            for (m.magic = 0; popcount((m.magic * m.mask) >> (SQUARE_NB - FILE_NB)) < FILE_NB - 2; )
+            {
+                m.magic = magicsInit[s];
+            }
+
+            // A good magic must map every possible occupancy to an index that
+            // looks up the correct sliding attack in the attacks[s] database.
+            // Note that we build up the database for square 's' as a side
+            // effect of verifying the magic. Keep track of the attempt count
+            // and save it in epoch[], little speed-up trick to avoid resetting
+            // m.attacks[] after every failed attempt.
+            for (++cnt, i = 0; i < size; ++i)
+            {
+                unsigned idx = m.index(occupancy[i]);
+
+                if (epoch[idx] < cnt)
+                {
+                    epoch[idx] = cnt;
+                    m.attacks[idx] = reference[i];
+                }
+                else if (m.attacks[idx] != reference[i])
+                    break;
+            }
+        }
+    }
+
+    delete[] occupancy;
+    delete[] reference;
+    delete[] epoch;
+  }
+
+  template <MovementType MT>
+  void init_magics(Bitboard table[], Magic magics[], std::map<Direction, int> directions) {
+
+    // Optimal PRNG seeds to pick the correct magics in the shortest time
+    int seeds[][RANK_NB] = { { 734, 10316, 55013, 32803, 12281, 15100,  16645, 255, 346, 89123 },
+                             { 734, 10316, 55013, 32803, 12281, 15100,  16645, 255, 346, 89123 } };
+
+    Bitboard* occupancy = new Bitboard[1 << (FILE_NB + RANK_NB - 4)];
+    Bitboard* reference = new Bitboard[1 << (FILE_NB + RANK_NB - 4)];
+    Bitboard edges, b;
+    int* epoch = new int[1 << (FILE_NB + RANK_NB - 4)]();
+    int cnt = 0, size = 0;
+
+    for (Square s = SQ_A1; s <= SQ_MAX; ++s)
+    {
+        // Board edges are not considered in the relevant occupancies
+        edges = ((Rank1BB | rank_bb(RANK_MAX)) & ~rank_bb(s)) | ((FileABB | file_bb(FILE_MAX)) & ~file_bb(s));
+
+        // Given a square 's', the mask is the bitboard of sliding attacks from
+        // 's' computed on an empty board. The index must be big enough to contain
+        // all the attacks for each possible subset of the mask and so is 2 power
+        // the number of 1s of the mask. Hence we deduce the size of the shift to
+        // apply to the 64 or 32 bits word to get the index.
+        Magic& m = magics[s];
+        // The mask for hoppers is unlimited distance, even if the hopper is limited distance (e.g., grasshopper)
+        if (MT == BY_HORSE)
+            m.mask  = horse_path(directions, s);
+        else
+            m.mask  = (MT == LAME_LEAPER ? lame_leaper_path(directions, s) : sliding_attack<MT == HOPPER ? UNLIMITED_RIDER : MT>(directions, s, 0)) & ~edges;
+        m.shift = 128 - popcount(m.mask);
+
+        // Set the offset for the attacks table of the square. We have individual
+        // table sizes for each square with "Fancy Magic Bitboards".
+        m.attacks = s == SQ_A1 ? table : magics[s - 1].attacks + size;
+
+        // Use Carry-Rippler trick to enumerate all subsets of masks[s] and
+        // store the corresponding sliding attack bitboard in reference[].
+        b = size = 0;
+        do {
+            occupancy[size] = b;
+            if (MT == BY_HORSE)
+                reference[size] = horse_attack(directions, s, b);
+            else
+                reference[size] = MT == LAME_LEAPER ? lame_leaper_attack(directions, s, b) : sliding_attack<MT>(directions, s, b);
+
+            if (HasPext)
+                m.attacks[pext(b, m.mask)] = reference[size];
+
+            size++;
+            b = (b - m.mask) & m.mask;
+        } while (b);
+
+        if (HasPext)
+            continue;
+
         PRNG rng(seeds[Is64Bit][rank_of(s)]);
-#endif
 
         // Find a magic for square 's' picking up an (almost) random number
         // until we find the one that passes the verification test.
@@ -436,15 +537,7 @@ namespace {
         {
             for (m.magic = 0; popcount((m.magic * m.mask) >> (SQUARE_NB - FILE_NB)) < FILE_NB - 2; )
             {
-#ifdef LARGEBOARDS
-#ifdef PRECOMPUTED_MAGICS
-                m.magic = magicsInit[s];
-#else
                 m.magic = (rng.sparse_rand<Bitboard>() << 64) ^ rng.sparse_rand<Bitboard>();
-#endif
-#else
-                m.magic = rng.sparse_rand<Bitboard>();
-#endif
             }
 
             // A good magic must map every possible occupancy to an index that

@@ -150,6 +150,7 @@ extern Magic BishopMagics[SQUARE_NB];
 extern Magic CannonMagicsH[SQUARE_NB];
 extern Magic CannonMagicsV[SQUARE_NB];
 extern Magic HorseMagics[SQUARE_NB];
+extern Magic ByHorseMagics[SQUARE_NB];
 extern Magic ElephantMagics[SQUARE_NB];
 extern Magic JanggiElephantMagics[SQUARE_NB];
 extern Magic CannonDiagMagics[SQUARE_NB];
@@ -419,6 +420,12 @@ inline Bitboard rider_attacks_bb(RiderType R, Square s, Bitboard occupied) {
 
   assert(R != NO_RIDER && !(R & (R - 1))); // exactly one bit
   const Magic& m = magics[lsb(R)][s]; // re-use Bitboard lsb for riders
+  return m.attacks[m.index(occupied)];
+}
+
+// returns a bitboard of all horses that attack the given square.
+inline Bitboard attacks_by_horse(Square s, Bitboard occupied) {
+  const Magic& m = ByHorseMagics[s];
   return m.attacks[m.index(occupied)];
 }
 
