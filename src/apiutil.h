@@ -42,8 +42,6 @@ enum Notation {
     NOTATION_SHOGI_HOSKING, // Examples: P76, S’34
     NOTATION_SHOGI_HODGES, // Examples: P-7f, S*3d
     NOTATION_SHOGI_HODGES_NUMBER, // Examples: P-76, S*34
-    // http://www.janggi.pl/janggi-notation/
-    NOTATION_JANGGI,
     // https://en.wikipedia.org/wiki/Xiangqi#Notation
     NOTATION_XIANGQI_WXF,
 };
@@ -137,8 +135,8 @@ inline std::string square(const Position& pos, Square s, Notation n) {
 
 inline Disambiguation disambiguation_level(const Position& pos, Move m, Notation n) {
 
-    // NOTATION_LAN and Janggi always use disambiguation
-    if (n == NOTATION_LAN || n == NOTATION_JANGGI)
+    // NOTATION_LAN always use disambiguation
+    if (n == NOTATION_LAN)
         return SQUARE_DISAMBIGUATION;
 
     Color us = pos.side_to_move();
@@ -229,7 +227,7 @@ inline const std::string move_to_san(Position& pos, Move m, Notation n) {
         }
         else if (pos.capture(m))
             san += 'x';
-        else if (n == NOTATION_LAN || (is_shogi(n) && (n != NOTATION_SHOGI_HOSKING || d == SQUARE_DISAMBIGUATION)) || n == NOTATION_JANGGI)
+        else if (n == NOTATION_LAN)
             san += '-';
 
         // Destination square

@@ -278,7 +278,7 @@ enum CheckCount : int {
 };
 
 enum MaterialCounting {
-  NO_MATERIAL_COUNTING, JANGGI_MATERIAL, UNWEIGHTED_MATERIAL, WHITE_DRAW_ODDS, BLACK_DRAW_ODDS
+  NO_MATERIAL_COUNTING, UNWEIGHTED_MATERIAL, WHITE_DRAW_ODDS, BLACK_DRAW_ODDS
 };
 
 enum ChasingRule {
@@ -355,11 +355,9 @@ enum Value : int {
   BreakthroughPieceValueMg = 300,   BreakthroughPieceValueEg = 300,
   ImmobilePieceValueMg     = 50,    ImmobilePieceValueEg     = 50,
   CannonPieceValueMg       = 800,   CannonPieceValueEg       = 700,
-  JanggiCannonPieceValueMg = 800,   JanggiCannonPieceValueEg = 600,
   SoldierValueMg           = 200,   SoldierValueEg           = 270,
   HorseValueMg             = 520,   HorseValueEg             = 800,
   ElephantValueMg          = 300,   ElephantValueEg          = 300,
-  JanggiElephantValueMg    = 340,   JanggiElephantValueEg    = 350,
   BannerValueMg            = 3400,  BannerValueEg            = 3500,
   WazirValueMg             = 400,   WazirValueEg             = 350,
   CommonerValueMg          = 700,   CommonerValueEg          = 900,
@@ -375,8 +373,8 @@ enum PieceType {
   FERS, MET = FERS, ALFIL, FERS_ALFIL, SILVER, KHON = SILVER, AIWOK, BERS, DRAGON = BERS,
   ARCHBISHOP, CHANCELLOR, AMAZON, KNIBIS, BISKNI, KNIROO, ROOKNI,
   SHOGI_PAWN, LANCE, SHOGI_KNIGHT, GOLD, DRAGON_HORSE,
-  CLOBBER_PIECE, BREAKTHROUGH_PIECE, IMMOBILE_PIECE, CANNON, JANGGI_CANNON,
-  SOLDIER, HORSE, ELEPHANT, JANGGI_ELEPHANT, BANNER,
+  CLOBBER_PIECE, BREAKTHROUGH_PIECE, IMMOBILE_PIECE, CANNON,
+  SOLDIER, HORSE, ELEPHANT, BANNER,
   WAZIR, COMMONER, CENTAUR,
 
   CUSTOM_PIECES,
@@ -411,7 +409,6 @@ enum RiderType : int {
   RIDER_CANNON_V = 1 << 4,
   RIDER_HORSE = 1 << 5,
   RIDER_ELEPHANT = 1 << 6,
-  RIDER_JANGGI_ELEPHANT = 1 << 7,
   RIDER_CANNON_DIAG = 1 << 8,
   RIDER_NIGHTRIDER = 1 << 9,
   RIDER_GRASSHOPPER_H = 1 << 10,
@@ -419,9 +416,8 @@ enum RiderType : int {
   RIDER_GRASSHOPPER_D = 1 << 12,
   HOPPING_RIDERS =  RIDER_CANNON_H | RIDER_CANNON_V | RIDER_CANNON_DIAG
                   | RIDER_GRASSHOPPER_H | RIDER_GRASSHOPPER_V | RIDER_GRASSHOPPER_D,
-  LAME_LEAPERS = RIDER_HORSE | RIDER_ELEPHANT | RIDER_JANGGI_ELEPHANT,
-  ASYMMETRICAL_RIDERS =  RIDER_HORSE | RIDER_JANGGI_ELEPHANT
-                       | RIDER_GRASSHOPPER_H | RIDER_GRASSHOPPER_V | RIDER_GRASSHOPPER_D,
+  LAME_LEAPERS = RIDER_HORSE | RIDER_ELEPHANT,
+  ASYMMETRICAL_RIDERS =  RIDER_HORSE | RIDER_GRASSHOPPER_H | RIDER_GRASSHOPPER_V | RIDER_GRASSHOPPER_D,
   NON_SLIDING_RIDERS = HOPPING_RIDERS | LAME_LEAPERS | RIDER_NIGHTRIDER,
 };
 

@@ -152,7 +152,6 @@ extern Magic CannonMagicsV[SQUARE_NB];
 extern Magic HorseMagics[SQUARE_NB];
 extern Magic ByHorseMagics[SQUARE_NB];
 extern Magic ElephantMagics[SQUARE_NB];
-extern Magic JanggiElephantMagics[SQUARE_NB];
 extern Magic CannonDiagMagics[SQUARE_NB];
 extern Magic NightriderMagics[SQUARE_NB];
 extern Magic GrasshopperMagicsH[SQUARE_NB];
@@ -323,9 +322,6 @@ inline Bitboard between_bb(Square s1, Square s2) {
 inline Bitboard between_bb(Square s1, Square s2, PieceType pt) {
   if (pt == HORSE)
       return PseudoAttacks[WHITE][WAZIR][s2] & PseudoAttacks[WHITE][FERS][s1];
-  else if (pt == JANGGI_ELEPHANT)
-      return  (PseudoAttacks[WHITE][WAZIR][s2] & PseudoAttacks[WHITE][ALFIL][s1])
-            | (PseudoAttacks[WHITE][KNIGHT][s2] & PseudoAttacks[WHITE][FERS][s1]);
   else
       return between_bb(s1, s2);
 }

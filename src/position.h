@@ -185,7 +185,6 @@ public:
   int extinction_piece_count() const;
   int extinction_opponent_piece_count() const;
   bool extinction_pseudo_royal() const;
-  bool flag_move() const;
   int connect_n() const;
   CheckCount checks_remaining(Color c) const;
   MaterialCounting material_counting() const;
@@ -795,11 +794,6 @@ inline int Position::extinction_opponent_piece_count() const {
 inline bool Position::extinction_pseudo_royal() const {
   assert(var != nullptr);
   return var->extinctionPseudoRoyal;
-}
-
-inline bool Position::flag_move() const {
-  assert(var != nullptr);
-  return var->flagMove;
 }
 
 inline int Position::connect_n() const {
