@@ -83,13 +83,6 @@ namespace {
         bonus += pieceCount[Us][pt1] * v;
     }
 
-    if (pos.must_capture())
-        bonus +=  (make_score(mg_value(QuadraticOurs[PAWN][PAWN]), 0) * pieceCount[Us][PAWN]
-                   + 3 * QuadraticOurs[KNIGHT][PAWN] * pieceCount[Us][KNIGHT]
-                   + QuadraticOurs[QUEEN][PAWN] * pieceCount[Us][QUEEN]) * pieceCount[Us][PAWN]
-                + make_score( mg_value(QuadraticOurs[KNIGHT][KNIGHT]),
-                             -eg_value(QuadraticOurs[KNIGHT][KNIGHT])) * pieceCount[Us][KNIGHT] * pieceCount[Us][KNIGHT];
-
     return bonus;
   }
 

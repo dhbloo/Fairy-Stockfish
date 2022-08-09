@@ -37,29 +37,17 @@ namespace {
         Variant* v = new Variant();
         return v;
     }
-    // Base for all fairy variants
-    Variant* chess_variant_base() {
-        Variant* v = variant_base()->init();
-        v->pieceToCharTable = "PNBRQ................Kpnbrq................k";
-        return v;
-    }
-    // Standard chess
-    // https://en.wikipedia.org/wiki/Chess
-    Variant* chess_variant() {
-        Variant* v = chess_variant_base()->init();
-        v->nnueAlias = "nn-";
-        return v;
-    }
     // Pseudo-variant only used for endgame initialization
     Variant* fairy_variant() {
-        Variant* v = chess_variant_base()->init();
+        Variant* v = variant_base()->init();
+        v->pieceToCharTable = "PNBRQ................Kpnbrq................k";
         v->add_piece(SILVER, 's');
         v->add_piece(FERS, 'f');
         return v;
     }
 #ifdef LARGEBOARDS
     Variant* xiangqi_variant() {
-        Variant* v = chess_variant_base()->init();
+        Variant* v = variant_base()->init();
         v->variantTemplate = "xiangqi";
         v->pieceToCharTable = "PN.R.AB..K.C..........pn.r.ab..k.c..........";
         v->reset_pieces();
@@ -82,7 +70,6 @@ namespace {
         v->castling = false;
         v->stalemateValue = -VALUE_MATE;
         v->soldierPromotionRank = RANK_6;
-        v->chasingRule = AXF_CHASING;
         v->nMoveRule = 0;
         return v;
     }
@@ -95,8 +82,6 @@ namespace {
 
 void VariantMap::init() {
     // Add to UCI_Variant option
-    add("chess", chess_variant());
-    add("normal", chess_variant());
     add("fairy", fairy_variant()); // fairy variant used for endgame code initialization
 #ifdef LARGEBOARDS
     add("xiangqi", xiangqi_variant());

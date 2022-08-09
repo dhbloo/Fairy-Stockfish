@@ -45,7 +45,7 @@ namespace PSQT {
 namespace UCI {
 
 std::set<string> standard_variants = {
-    "normal", "xiangqi"
+    "xiangqi"
 };
 
 void init_variant(const Variant* v) {
@@ -122,7 +122,7 @@ void init(OptionsMap& o) {
   o["Move Overhead"]         << Option(10, 0, 5000);
   o["Slow Mover"]            << Option(100, 10, 1000);
   o["nodestime"]             << Option(0, 0, 10000);
-  o["UCI_Variant"]           << Option("chess", variants.get_keys(), on_variant_change);
+  o["UCI_Variant"]           << Option("xiangqi", variants.get_keys(), on_variant_change);
   o["UCI_AnalyseMode"]       << Option(false);
   o["UCI_ShowWDL"]           << Option(false);
   o["SyzygyPath"]            << Option("<empty>", on_tb_path);

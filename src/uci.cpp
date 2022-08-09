@@ -79,7 +79,6 @@ namespace {
 
   // uci() is called when engine receives the "uci" or "ucinewgame" command.
   void uci(Position& pos, StateListPtr& states) {
-          Options["UCI_Variant"].set_default("xiangqi");
           std::istringstream ss("startpos");
           position(pos, ss, states);
           Search::clear();

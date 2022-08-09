@@ -393,34 +393,25 @@ namespace {
 
     // Squares occupied by those pawns, by our king or queen, by blockers to attacks on our king
     // or controlled by enemy pawns are excluded from the mobility area.
-    if (pos.must_capture())
-        mobilityArea[Us] = AllSquares;
-    else
-        mobilityArea[Us] = ~(b | pos.pieces(Us, KING, QUEEN) | pos.blockers_for_king(Us) | pe->pawn_attacks(Them)
-                               | (pos.pieces(Us, SHOGI_PAWN) & shift<Down>(pos.pieces(Us)))
-                               | shift<Down>(pos.pieces(Them, SHOGI_PAWN, SOLDIER))
-                               | shift<EAST>(pos.promoted_soldiers(Them))
-                               | shift<WEST>(pos.promoted_soldiers(Them)));
+    mobilityArea[Us] = ~(b | pos.pieces(Us, KING, QUEEN) | pos.blockers_for_king(Us) | pe->pawn_attacks(Them)
+        | (pos.pieces(Us, SHOGI_PAWN) & shift<Down>(pos.pieces(Us)))
+        | shift<Down>(pos.pieces(Them, SHOGI_PAWN, SOLDIER))
+        | shift<EAST>(pos.promoted_soldiers(Them))
+        | shift<WEST>(pos.promoted_soldiers(Them)));
 
     // Initialize attackedBy[] for king and pawns
     attackedBy[Us][KING] = pos.count<KING>(Us) ? pos.attacks_from(Us, KING, ksq) : Bitboard(0);
     attackedBy[Us][PAWN] = pe->pawn_attacks(Us);
     attackedBy[Us][SHOGI_PAWN] = shift<Up>(pos.pieces(Us, SHOGI_PAWN));
     attackedBy[Us][ALL_PIECES] = attackedBy[Us][KING] | attackedBy[Us][PAWN] | attackedBy[Us][SHOGI_PAWN];
-    attackedBy2[Us]            =  (attackedBy[Us][KING] & attackedBy[Us][PAWN])
-                                | (attackedBy[Us][KING] & attackedBy[Us][SHOGI_PAWN])
-                                | (attackedBy[Us][PAWN] & attackedBy[Us][SHOGI_PAWN])
-                                | dblAttackByPawn;
+    attackedBy2[Us] = (attackedBy[Us][KING] & attackedBy[Us][PAWN])
+        | (attackedBy[Us][KING] & attackedBy[Us][SHOGI_PAWN])
+        | (attackedBy[Us][PAWN] & attackedBy[Us][SHOGI_PAWN])
+        | dblAttackByPawn;
 
-    // Init our king safety tables
-    if (!pos.count<KING>(Us))
-        kingRing[Us] = Bitboard(0);
-    else
-    {
-        Square s = make_square(std::clamp(file_of(ksq), FILE_B, File(pos.max_file() - 1)),
-                               std::clamp(rank_of(ksq), RANK_2, Rank(pos.max_rank() - 1)));
-        kingRing[Us] = attacks_bb<KING>(s) | s;
-    }
+    Square s = make_square(std::clamp(file_of(ksq), FILE_B, File(pos.max_file() - 1)),
+        std::clamp(rank_of(ksq), RANK_2, Rank(pos.max_rank() - 1)));
+    kingRing[Us] = attacks_bb<KING>(s) | s;
 
     kingAttackersCount[Them] = popcount(kingRing[Us] & (pe->pawn_attacks(Them) | shift<Down>(pos.pieces(Them, SHOGI_PAWN))));
     kingAttacksCount[Them] = kingAttackersWeight[Them] = 0;
@@ -453,9 +444,8 @@ namespace {
         Square s = pop_lsb(b1);
 
         // Find attacked squares, including x-ray attacks for bishops and rooks
-        b = Pt == BISHOP ? attacks_bb<BISHOP>(s, pos.pieces() ^ pos.pieces(QUEEN))
-          : Pt ==   ROOK && !pos.diagonal_lines() ? attacks_bb<  ROOK>(s, pos.pieces() ^ pos.pieces(QUEEN) ^ pos.pieces(Us, ROOK))
-                         : pos.attacks_from(Us, Pt, s);
+        b = Pt == ROOK && !pos.diagonal_lines() ? attacks_bb<  ROOK>(s, pos.pieces() ^ pos.pieces(QUEEN) ^ pos.pieces(Us, ROOK))
+            : pos.attacks_from(Us, Pt, s);
 
         // Restrict mobility to actual squares of board
         b &= pos.board_bb(Us, Pt);
@@ -742,26 +732,6 @@ namespace {
 
     Bitboard b, weak, defended, nonPawnEnemies, stronglyProtected, safe;
     Score score = SCORE_ZERO;
-
-    // Bonuses for variants with mandatory captures
-    if (pos.must_capture())
-    {
-        // Penalties for possible captures
-        Bitboard captures = attackedBy[Us][ALL_PIECES] & pos.pieces(Them);
-        if (captures)
-            score -= make_score(2000, 2000) / (1 + popcount(captures & attackedBy[Them][ALL_PIECES] & ~attackedBy2[Us]));
-
-        // Bonus if we threaten to force captures
-        Bitboard moves = 0, piecebb = pos.pieces(Us);
-        while (piecebb)
-        {
-            Square s = pop_lsb(piecebb);
-            if (type_of(pos.piece_on(s)) != KING)
-                moves |= pos.moves_from(Us, type_of(pos.piece_on(s)), s);
-        }
-        score += make_score(200, 200) * popcount(attackedBy[Them][ALL_PIECES] & moves & ~pos.pieces());
-        score += make_score(200, 220) * popcount(attackedBy[Them][ALL_PIECES] & moves & ~pos.pieces() & ~attackedBy2[Us]);
-    }
 
     // Extinction threats
     if (pos.extinction_value() == -VALUE_MATE)
@@ -1288,7 +1258,7 @@ namespace {
         if (pt != KING)
             score += pieces<WHITE>(pt) - pieces<BLACK>(pt);
 
-    score += (mobility[WHITE] - mobility[BLACK]) * (1 + pos.captures_to_hand() + pos.must_capture());
+    score += mobility[WHITE] - mobility[BLACK];
 
     // More complex interactions that require fully populated attack bitboards
     score +=  king<   WHITE>() - king<   BLACK>()

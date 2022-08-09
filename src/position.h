@@ -149,7 +149,6 @@ public:
   bool nnue_applicable() const;
   bool checking_permitted() const;
   bool drop_checks() const;
-  bool must_capture() const;
   bool has_capture() const;
   bool must_drop() const;
   bool piece_drops() const;
@@ -530,11 +529,6 @@ inline bool Position::checking_permitted() const {
 inline bool Position::drop_checks() const {
   assert(var != nullptr);
   return var->dropChecks;
-}
-
-inline bool Position::must_capture() const {
-  assert(var != nullptr);
-  return var->mustCapture;
 }
 
 inline bool Position::has_capture() const {

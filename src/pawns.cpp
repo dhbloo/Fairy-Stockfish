@@ -181,13 +181,12 @@ namespace {
 
         else if (!neighbours)
         {
-            if (     opposed
-                &&  (ourPawns & forward_file_bb(Them, s))
+            if (opposed
+                && (ourPawns & forward_file_bb(Them, s))
                 && !(theirPawns & adjacent_files_bb(s)))
-                score -= Doubled * (1 + 2 * pos.must_capture());
+                score -= Doubled;
             else
-                score -=  Isolated * (1 + 2 * pos.must_capture())
-                        + WeakUnopposed * !opposed;
+                score -= Isolated + WeakUnopposed * !opposed;
         }
 
         else if (backward)

@@ -60,7 +60,6 @@ struct Variant {
   bool mandatoryPawnPromotion = true;
   bool mandatoryPiecePromotion = false;
   bool pieceDemotion = false;
-  bool blastOnCapture = false;
   bool doubleStep = true;
   Rank doubleStepRank = RANK_2;
   Rank doubleStepRankMin = RANK_2;
@@ -76,7 +75,6 @@ struct Variant {
   PieceType kingType = KING;
   bool checking = true;
   bool dropChecks = true;
-  bool mustCapture = false;
   bool mustDrop = false;
   PieceType mustDropType = ALL_PIECES;
   bool pieceDrops = false;
@@ -112,7 +110,6 @@ struct Variant {
   bool nFoldValueAbsolute = false;
   bool perpetualCheckIllegal = true;
   bool moveRepetitionIllegal = false;
-  ChasingRule chasingRule = NO_CHASING;
   Value stalemateValue = VALUE_DRAW;
   bool stalematePieceCount = false; // multiply stalemate value by sign(count(~stm) - count(stm))
   Value checkmateValue = -VALUE_MATE;
@@ -177,18 +174,8 @@ struct Variant {
   Variant* conclude() {
 
       // Initialize calculated NNUE properties
-      nnueKing =  pieceTypes.find(KING) != pieceTypes.end() ? KING
-                : extinctionPieceCount == 0 && extinctionPieceTypes.find(COMMONER) != extinctionPieceTypes.end() ? COMMONER
-                : NO_PIECE_TYPE;
-      if (nnueKing != NO_PIECE_TYPE)
-      {
-          std::string fenBoard = startFen.substr(0, startFen.find(' '));
-          // Switch NNUE from KA to A if there is no unique piece
-          if (   std::count(fenBoard.begin(), fenBoard.end(), pieceToChar[make_piece(WHITE, nnueKing)]) != 1
-              || std::count(fenBoard.begin(), fenBoard.end(), pieceToChar[make_piece(BLACK, nnueKing)]) != 1)
-              nnueKing = NO_PIECE_TYPE;
-      }
-      int nnueSquares = (RANK_10 + 1) * (FILE_I + 1);
+      nnueKing = KING;
+      int nnueSquares = 90;
       nnueUsePockets = false;
       int nnuePockets = 0;
       int nnueNonDropPieceIndices = (2 * pieceTypes.size() - (nnueKing != NO_PIECE_TYPE)) * nnueSquares;

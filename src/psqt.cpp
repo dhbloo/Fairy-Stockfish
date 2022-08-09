@@ -268,7 +268,7 @@ void init(const Variant* v) {
           File f = std::max(File(edge_distance(file_of(s), v->maxFile)), FILE_A);
           Rank r = rank_of(s);
           psq[ pc][s] = score + (  pt == KING  ? KingBonus[std::clamp(Rank(r - pawnRank + 1), RANK_1, RANK_8)][std::min(f, FILE_D)] * 1
-                                 : pt <= QUEEN ? Bonus[pc][std::min(r, RANK_8)][std::min(f, FILE_D)] * (1 + v->blastOnCapture)
+                                 : pt <= QUEEN ? Bonus[pc][std::min(r, RANK_8)][std::min(f, FILE_D)]
                                  : pt == HORSE ? Bonus[KNIGHT][std::min(r, RANK_8)][std::min(f, FILE_D)]
                                  : pt == COMMONER && v->extinctionValue == -VALUE_MATE && v->extinctionPieceTypes.find(COMMONER) != v->extinctionPieceTypes.end() ? KingBonus[std::clamp(Rank(r - pawnRank + 1), RANK_1, RANK_8)][std::min(f, FILE_D)]
                                  : isSlider    ? make_score(5, 5) * (2 * f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile - 1)
@@ -283,12 +283,6 @@ void init(const Variant* v) {
               if (f == FILE_A && (r == RANK_1 || r == v->maxRank))
                   psq[pc][s] += make_score(1000, 1000);
           }
-          // In atomic variants pieces are "self-defending" and should therefore be pushed forward
-          if (v->blastOnCapture)
-              psq[pc][s] += make_score(40, 0) * (r - v->maxRank / 2);
-          // Safe king squares
-          if (r == RANK_1 && f <= FILE_B && (pt == COMMONER && v->blastOnCapture))
-              psq[pc][s] += make_score(100, 0);
           psq[~pc][rank_of(s) <= v->maxRank ? flip_rank(s, v->maxRank) : s] = -psq[pc][s];
       }
       // Pieces in hand

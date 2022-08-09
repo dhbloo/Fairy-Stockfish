@@ -283,7 +283,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("mandatoryPawnPromotion", v->mandatoryPawnPromotion);
     parse_attribute("mandatoryPiecePromotion", v->mandatoryPiecePromotion);
     parse_attribute("pieceDemotion", v->pieceDemotion);
-    parse_attribute("blastOnCapture", v->blastOnCapture);
     parse_attribute("doubleStep", v->doubleStep);
     parse_attribute("doubleStepRank", v->doubleStepRank);
     parse_attribute("doubleStepRankMin", v->doubleStepRankMin);
@@ -298,7 +297,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("castlingRookPiece", v->castlingRookPiece, v->pieceToChar);
     parse_attribute("checking", v->checking);
     parse_attribute("dropChecks", v->dropChecks);
-    parse_attribute("mustCapture", v->mustCapture);
     parse_attribute("mustDrop", v->mustDrop);
     parse_attribute("mustDropType", v->mustDropType, v->pieceToChar);
     parse_attribute("pieceDrops", v->pieceDrops);
@@ -332,7 +330,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("nFoldValueAbsolute", v->nFoldValueAbsolute);
     parse_attribute("perpetualCheckIllegal", v->perpetualCheckIllegal);
     parse_attribute("moveRepetitionIllegal", v->moveRepetitionIllegal);
-    parse_attribute("chasingRule", v->chasingRule);
     parse_attribute("stalemateValue", v->stalemateValue);
     parse_attribute("stalematePieceCount", v->stalematePieceCount);
     parse_attribute("checkmateValue", v->checkmateValue);
@@ -417,8 +414,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
         // Options incompatible with royal kings
         if (v->pieceTypes.find(KING) != v->pieceTypes.end())
         {
-            if (v->blastOnCapture)
-                std::cerr << "Can not use kings with blastOnCapture." << std::endl;
             if (v->flipEnclosedPieces)
                 std::cerr << "Can not use kings with flipEnclosedPieces." << std::endl;
             // We can not fully check support for custom king movements at this point,
