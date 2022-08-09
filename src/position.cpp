@@ -661,7 +661,6 @@ namespace Stockfish {
     bool Position::legal(Move m) const {
 
         assert(is_ok(m));
-        assert(piece_drops());
 
         Color us = sideToMove;
         Square from = from_sq(m);

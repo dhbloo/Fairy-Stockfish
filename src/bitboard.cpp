@@ -375,7 +375,7 @@ void Bitboards::init() {
 
   for (Square s1 = SQ_A1; s1 <= SQ_MAX; ++s1)
   {
-      for (PieceType pt : { BISHOP, ROOK })
+      for (PieceType pt : { ROOK })
           for (Square s2 = SQ_A1; s2 <= SQ_MAX; ++s2)
           {
               if (PseudoAttacks[WHITE][pt][s1] & s2)
