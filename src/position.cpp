@@ -94,30 +94,6 @@ namespace Stockfish {
         return os;
     }
 
-
-    // Marcel van Kervinck's cuckoo algorithm for fast detection of "upcoming repetition"
-    // situations. Description of the algorithm in the following paper:
-    // https://marcelk.net/2013-04-06/paper/upcoming-rep-v2.pdf
-
-    // First and second hash functions for indexing the cuckoo tables
-#ifdef LARGEBOARDS
-    inline int H1(Key h) { return h & 0x7fff; }
-    inline int H2(Key h) { return (h >> 16) & 0x7fff; }
-#else
-    inline int H1(Key h) { return h & 0x1fff; }
-    inline int H2(Key h) { return (h >> 16) & 0x1fff; }
-#endif
-
-    // Cuckoo tables with Zobrist hashes of valid reversible moves, and the moves themselves
-#ifdef LARGEBOARDS
-    Key cuckoo[65536];
-    Move cuckooMove[65536];
-#else
-    Key cuckoo[8192];
-    Move cuckooMove[8192];
-#endif
-
-
     /// Position::init() initializes at startup the various arrays used to compute hash keys
 
     void Position::init() {
@@ -140,38 +116,6 @@ namespace Stockfish {
             for (PieceType pt = PAWN; pt <= KING; ++pt)
                 for (int n = 0; n < SQUARE_NB; ++n)
                     Zobrist::inHand[make_piece(c, pt)][n] = rng.rand<Key>();
-
-        // Prepare the cuckoo tables
-        std::memset(cuckoo, 0, sizeof(cuckoo));
-        std::memset(cuckooMove, 0, sizeof(cuckooMove));
-        int count = 0;
-        for (Color c : {WHITE, BLACK})
-            for (PieceType pt = KNIGHT; pt <= QUEEN || pt == KING; pt != QUEEN ? ++pt : pt = KING)
-            {
-                Piece pc = make_piece(c, pt);
-                for (Square s1 = SQ_A1; s1 <= SQ_MAX; ++s1)
-                    for (Square s2 = Square(s1 + 1); s2 <= SQ_MAX; ++s2)
-                        if (attacks_bb(c, type_of(pc), s1, 0) & s2)
-                        {
-                            Move move = make_move(s1, s2);
-                            Key key = Zobrist::psq[pc][s1] ^ Zobrist::psq[pc][s2] ^ Zobrist::side;
-                            int i = H1(key);
-                            while (true)
-                            {
-                                std::swap(cuckoo[i], key);
-                                std::swap(cuckooMove[i], move);
-                                if (move == MOVE_NONE) // Arrived at empty slot?
-                                    break;
-                                i = (i == H1(key)) ? H2(key) : H1(key); // Push victim to alternative slot
-                            }
-                            count++;
-                        }
-            }
-#ifdef LARGEBOARDS
-        assert(count == 9344);
-#else
-        assert(count == 3668);
-#endif
     }
 
 
