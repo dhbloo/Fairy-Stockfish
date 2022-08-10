@@ -324,7 +324,7 @@ namespace Stockfish {
             size_t pvFirst = 0;
             pvLast = 0;
 
-            if (!Threads.increaseDepth)
+            if (!Threads.increaseDepth && id() % 2 == 0)
                 searchAgainCounter++;
 
             // MultiPV loop. We perform a full root search for each PV line

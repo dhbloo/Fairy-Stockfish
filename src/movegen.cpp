@@ -210,7 +210,7 @@ namespace {
 
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
         for (PieceType pt : pos.piece_types())
-            if (pt != PAWN && pt != KING)
+            if (pt != KING)
                 moveList = generate_moves<Us, Checks>(pos, moveList, pt, target);
         // generate drops
         if (pos.piece_drops() && Type != CAPTURES && (pos.can_drop(Us, ALL_PIECES)))
