@@ -32,14 +32,9 @@ namespace Stockfish {
 VariantMap variants; // Global object
 
 namespace {
-    // Base variant
-    Variant* variant_base() {
-        Variant* v = new Variant();
-        return v;
-    }
     // Pseudo-variant only used for endgame initialization
     Variant* fairy_variant() {
-        Variant* v = variant_base()->init();
+        Variant* v = new Variant();
         v->pieceToCharTable = "PNBRQ................Kpnbrq................k";
         v->add_piece(SILVER, 's');
         v->add_piece(FERS, 'f');
@@ -47,7 +42,7 @@ namespace {
     }
 #ifdef LARGEBOARDS
     Variant* xiangqi_variant() {
-        Variant* v = variant_base()->init();
+        Variant* v = new Variant();
         v->variantTemplate = "xiangqi";
         v->pieceToCharTable = "PN.R.AB..K.C..........pn.r.ab..k.c..........";
         v->reset_pieces();
