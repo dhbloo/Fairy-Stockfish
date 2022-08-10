@@ -67,7 +67,7 @@ namespace {
     constexpr Direction UpRight  = (Us == WHITE ? NORTH_EAST : SOUTH_WEST);
     constexpr Direction UpLeft   = (Us == WHITE ? NORTH_WEST : SOUTH_EAST);
 
-    Bitboard TRank8BB = pos.sittuyin_promotion() ? Bitboard(0) : zone_bb(Us, pos.promotion_rank(), pos.max_rank());
+    Bitboard TRank8BB = zone_bb(Us, pos.promotion_rank(), pos.max_rank());
     Bitboard TRank7BB = shift<Down>(TRank8BB);
     // Define squares a pawn can pass during a double step
 
@@ -128,7 +128,7 @@ namespace {
   template<Color Us, bool Checks>
   ExtMove* generate_moves(const Position& pos, ExtMove* moveList, PieceType Pt, Bitboard target) {
 
-    assert(Pt != KING && Pt != PAWN);
+    assert(Pt != KING);
 
     Bitboard bb = pos.pieces(Us, Pt);
 

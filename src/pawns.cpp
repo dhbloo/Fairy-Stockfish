@@ -165,11 +165,11 @@ namespace {
 
         // Passed pawns will be properly scored later in evaluation when we have
         // full attack info.
-        if (passed && is_ok(s + Up) && !pos.sittuyin_promotion())
+        if (passed && is_ok(s + Up))
             e->passedPawns[Us] |= s;
 
         // Score this pawn
-        if ((support | phalanx) && !pos.sittuyin_promotion())
+        if (support | phalanx)
         {
             int v =  Connected[r] * (2 + bool(phalanx) - bool(opposed)) * (r == RANK_2 && pos.captures_to_hand() ? 3 : 1)
                    + 22 * popcount(support);

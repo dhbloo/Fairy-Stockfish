@@ -251,7 +251,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
         if (DoCheck && idx == std::string::npos && token != '-')
             std::cerr << "promotionPieceTypes - Invalid piece type: " << token << std::endl;
     }
-    parse_attribute("sittuyinPromotion", v->sittuyinPromotion);
     // promotion limit
     const auto& it_prom_limit = config.find("promotionLimit");
     if (it_prom_limit != config.end())
@@ -324,7 +323,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("soldierPromotionRank", v->soldierPromotionRank);
     parse_attribute("flipEnclosedPieces", v->flipEnclosedPieces);
     // game end
-    parse_attribute("nMoveRule", v->nMoveRule);
     parse_attribute("nFoldRule", v->nFoldRule);
     parse_attribute("nFoldValue", v->nFoldValue);
     parse_attribute("nFoldValueAbsolute", v->nFoldValueAbsolute);

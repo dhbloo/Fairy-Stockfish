@@ -53,7 +53,6 @@ struct Variant {
   Bitboard boardbb[COLOR_NB][PIECE_TYPE_NB] = {};
   Rank promotionRank = RANK_8;
   std::set<PieceType, std::greater<PieceType> > promotionPieceTypes = { QUEEN, ROOK, BISHOP, KNIGHT };
-  bool sittuyinPromotion = false;
   int promotionLimit[PIECE_TYPE_NB] = {}; // 0 means unlimited
   PieceType promotedPieceType[PIECE_TYPE_NB] = {};
   bool piecePromotionOnCapture = false;
@@ -104,7 +103,6 @@ struct Variant {
   bool freeDrops = false;
 
   // game end
-  int nMoveRule = 50;
   int nFoldRule = 3;
   Value nFoldValue = VALUE_DRAW;
   bool nFoldValueAbsolute = false;

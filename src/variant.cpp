@@ -70,7 +70,6 @@ namespace {
         v->castling = false;
         v->stalemateValue = -VALUE_MATE;
         v->soldierPromotionRank = RANK_6;
-        v->nMoveRule = 0;
         return v;
     }
 #endif

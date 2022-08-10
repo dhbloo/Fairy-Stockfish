@@ -124,7 +124,6 @@ public:
   const std::string& piece_to_char_synonyms() const;
   Rank promotion_rank() const;
   const std::set<PieceType, std::greater<PieceType> >& promotion_piece_types() const;
-  bool sittuyin_promotion() const;
   int promotion_limit(PieceType pt) const;
   PieceType promoted_piece_type(PieceType pt) const;
   bool piece_promotion_on_capture() const;
@@ -174,7 +173,6 @@ public:
   Bitboard promoted_soldiers(Color c) const;
   EnclosingRule flip_enclosed_pieces() const;
   // winning conditions
-  int n_move_rule() const;
   int n_fold_rule() const;
   Value stalemate_value(int ply = 0) const;
   Value checkmate_value(int ply = 0) const;
@@ -403,11 +401,6 @@ inline Rank Position::promotion_rank() const {
 inline const std::set<PieceType, std::greater<PieceType> >& Position::promotion_piece_types() const {
   assert(var != nullptr);
   return var->promotionPieceTypes;
-}
-
-inline bool Position::sittuyin_promotion() const {
-  assert(var != nullptr);
-  return var->sittuyinPromotion;
 }
 
 inline int Position::promotion_limit(PieceType pt) const {
@@ -714,11 +707,6 @@ inline bool Position::pass_on_stalemate() const {
 inline Bitboard Position::promoted_soldiers(Color c) const {
   assert(var != nullptr);
   return pieces(c, SOLDIER) & zone_bb(c, var->soldierPromotionRank, max_rank());
-}
-
-inline int Position::n_move_rule() const {
-  assert(var != nullptr);
-  return var->nMoveRule;
 }
 
 inline int Position::n_fold_rule() const {
