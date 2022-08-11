@@ -23,6 +23,11 @@ jobs:
       - name: make	
         run: cd src && make clean && make -j build COMP=mingw ARCH=${{ matrix.arch }} EXE=${{ matrix.arch }}.exe largeboards=yes && strip ${{ matrix.arch }}.exe	
 
+      - uses: crazy-max/ghaction-upx@v2
+        with:
+          files: src/x86-64*.exe
+          args: -fq --best
+
       - uses: actions/upload-artifact@v3	
         with:	
           name: fairy-stockfish	
