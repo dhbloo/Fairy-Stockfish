@@ -146,7 +146,6 @@ struct Magic {
 
 extern Magic RookMagicsH[SQUARE_NB];
 extern Magic RookMagicsV[SQUARE_NB];
-extern Magic BishopMagics[SQUARE_NB];
 extern Magic CannonMagicsH[SQUARE_NB];
 extern Magic CannonMagicsV[SQUARE_NB];
 extern Magic HorseMagics[SQUARE_NB];
@@ -474,14 +473,6 @@ inline Bitboard attacks_bb(Color c, PieceType pt, Square s, Bitboard occupied) {
       break;
   case ELEPHANT: 
       b |= rider_attacks_bb<RIDER_ELEPHANT>(s, occupied);
-      break;
-  case BISHOP:
-      b |= rider_attacks_bb<RIDER_BISHOP>(s, occupied);
-      break;
-  case QUEEN:
-      b |= rider_attacks_bb<RIDER_BISHOP>(s, occupied);
-      b |= rider_attacks_bb<RIDER_ROOK_H>(s, occupied);
-      b |= rider_attacks_bb<RIDER_ROOK_V>(s, occupied);
       break;
   default: break;
   }

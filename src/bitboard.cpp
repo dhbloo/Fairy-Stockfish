@@ -42,15 +42,13 @@ RiderType MoveRiderTypes[PIECE_TYPE_NB];
 
 Magic RookMagicsH[SQUARE_NB];
 Magic RookMagicsV[SQUARE_NB];
-Magic BishopMagics[SQUARE_NB];
 Magic CannonMagicsH[SQUARE_NB];
 Magic CannonMagicsV[SQUARE_NB];
 Magic HorseMagics[SQUARE_NB];
 Magic ByHorseMagics[SQUARE_NB];
 Magic ElephantMagics[SQUARE_NB];
 
-Magic* magics[] = {BishopMagics, RookMagicsH, RookMagicsV, CannonMagicsH, CannonMagicsV,
-                   HorseMagics, ElephantMagics};
+Magic* magics[] = {RookMagicsH, RookMagicsV, CannonMagicsH, CannonMagicsV, HorseMagics, ElephantMagics};
 
 namespace {
 
@@ -78,7 +76,6 @@ namespace {
   // Rider directions
   const std::map<Direction, int> RookDirectionsV { {NORTH, 0}, {SOUTH, 0}};
   const std::map<Direction, int> RookDirectionsH { {EAST, 0}, {WEST, 0} };
-  const std::map<Direction, int> BishopDirections { {NORTH_EAST, 0}, {SOUTH_EAST, 0}, {SOUTH_WEST, 0}, {NORTH_WEST, 0} };
   const std::map<Direction, int> HorseDirections { {2 * SOUTH + WEST, 0}, {2 * SOUTH + EAST, 0}, {SOUTH + 2 * WEST, 0}, {SOUTH + 2 * EAST, 0},
                                                    {NORTH + 2 * WEST, 0}, {NORTH + 2 * EAST, 0}, {2 * NORTH + WEST, 0}, {2 * NORTH + EAST, 0} };
   const std::map<Direction, int> ElephantDirections { {2 * NORTH_EAST, 0}, {2 * SOUTH_EAST, 0}, {2 * SOUTH_WEST, 0}, {2 * NORTH_WEST, 0} };
@@ -246,8 +243,6 @@ void Bitboards::init_pieces() {
           }
           for (auto const& [d, limit] : pi->slider[modality])
           {
-              if (BishopDirections.find(d) != BishopDirections.end())
-                  riderTypes |= RIDER_BISHOP;
               if (RookDirectionsH.find(d) != RookDirectionsH.end())
                   riderTypes |= RIDER_ROOK_H;
               if (RookDirectionsV.find(d) != RookDirectionsV.end())
@@ -312,7 +307,6 @@ void Bitboards::init() {
 #ifdef PRECOMPUTED_MAGICS
   init_magics<RIDER>(RookTableH, RookMagicsH, RookDirectionsH, RookMagicHInit);
   init_magics<RIDER>(RookTableV, RookMagicsV, RookDirectionsV, RookMagicVInit);
-  init_magics<RIDER>(BishopTable, BishopMagics, BishopDirections, BishopMagicInit);
   init_magics<HOPPER>(CannonTableH, CannonMagicsH, RookDirectionsH, CannonMagicHInit);
   init_magics<HOPPER>(CannonTableV, CannonMagicsV, RookDirectionsV, CannonMagicVInit);
   init_magics<LAME_LEAPER>(HorseTable, HorseMagics, HorseDirections, HorseMagicInit);
@@ -320,7 +314,6 @@ void Bitboards::init() {
 #else
   init_magics<RIDER>(RookTableH, RookMagicsH, RookDirectionsH);
   init_magics<RIDER>(RookTableV, RookMagicsV, RookDirectionsV);
-  init_magics<RIDER>(BishopTable, BishopMagics, BishopDirections);
   init_magics<HOPPER>(CannonTableH, CannonMagicsH, RookDirectionsH);
   init_magics<HOPPER>(CannonTableV, CannonMagicsV, RookDirectionsV);
   init_magics<LAME_LEAPER>(HorseTable, HorseMagics, HorseDirections);
