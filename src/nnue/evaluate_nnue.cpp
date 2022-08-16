@@ -158,7 +158,10 @@ namespace Stockfish::Eval::NNUE {
     ASSERT_ALIGNED(transformedFeatures, alignment);
     ASSERT_ALIGNED(buffer, alignment);
 
-    const std::size_t bucket = pos.count<ALL_PIECES>() - 1;
+    int selfPieceCount = popcount(pos.pieces() & HomeHalf[pos.side_to_move()]);
+    int oppPieceCount = pos.count<ALL_PIECES>() - selfPieceCount;
+
+    const std::size_t bucket = (((selfPieceCount - 1) / 4) * 8 + (oppPieceCount - 1) / 4);
     const auto psqt = featureTransformer->transform(pos, transformedFeatures, bucket);
     const auto positional = network[bucket]->propagate(transformedFeatures, buffer)[0];
 
