@@ -54,7 +54,6 @@ namespace {
 
 // Some magics need to be split in order to reduce memory consumption.
 // Otherwise on a 12x10 board they can be >100 MB.
-#ifdef LARGEBOARDS
   Bitboard RookTableH[0x11800];  // To store horizontalrook attacks
   Bitboard RookTableV[0x4800];  // To store vertical rook attacks
   Bitboard BishopTable[0x33C00]; // To store bishop attacks
@@ -63,15 +62,7 @@ namespace {
   Bitboard HorseTable[0x500];  // To store horse attacks
   Bitboard ByHorseTable[0x1000]; // To store attacks by horse
   Bitboard ElephantTable[0x400];  // To store elephant attacks
-#else
-  Bitboard RookTableH[0xA00];  // To store horizontal rook attacks
-  Bitboard RookTableV[0xA00];  // To store vertical rook attacks
-  Bitboard BishopTable[0x1480]; // To store bishop attacks
-  Bitboard CannonTableH[0xA00];  // To store horizontal cannon attacks
-  Bitboard CannonTableV[0xA00];  // To store vertical cannon attacks
-  Bitboard HorseTable[0x240];  // To store horse attacks
-  Bitboard ElephantTable[0x1A0];  // To store elephant attacks
-#endif
+
 
   // Rider directions
   const std::map<Direction, int> RookDirectionsV { {NORTH, 0}, {SOUTH, 0}};

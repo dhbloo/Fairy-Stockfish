@@ -178,13 +178,12 @@ namespace Stockfish {
         {
             if (isdigit(token))
             {
-#ifdef LARGEBOARDS
                 if (isdigit(ss.peek()))
                 {
                     sq += 10 * (token - '0') * EAST;
                     ss >> token;
                 }
-#endif
+
                 sq += (token - '0') * EAST; // Advance the given number of files
             }
 

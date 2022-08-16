@@ -40,7 +40,7 @@ namespace {
         v->add_piece(FERS, 'f');
         return v;
     }
-#ifdef LARGEBOARDS
+
     Variant* xiangqi_variant() {
         Variant* v = new Variant();
         v->variantTemplate = "xiangqi";
@@ -67,7 +67,6 @@ namespace {
         v->soldierPromotionRank = RANK_6;
         return v;
     }
-#endif
 
 } // namespace
 
@@ -77,9 +76,7 @@ namespace {
 void VariantMap::init() {
     // Add to UCI_Variant option
     add("fairy", fairy_variant()); // fairy variant used for endgame code initialization
-#ifdef LARGEBOARDS
     add("xiangqi", xiangqi_variant());
-#endif
 }
 
 
