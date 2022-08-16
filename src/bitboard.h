@@ -152,12 +152,6 @@ extern Magic CannonMagicsV[SQUARE_NB];
 extern Magic HorseMagics[SQUARE_NB];
 extern Magic ByHorseMagics[SQUARE_NB];
 extern Magic ElephantMagics[SQUARE_NB];
-extern Magic JanggiElephantMagics[SQUARE_NB];
-extern Magic CannonDiagMagics[SQUARE_NB];
-extern Magic NightriderMagics[SQUARE_NB];
-extern Magic GrasshopperMagicsH[SQUARE_NB];
-extern Magic GrasshopperMagicsV[SQUARE_NB];
-extern Magic GrasshopperMagicsD[SQUARE_NB];
 
 extern Magic* magics[];
 
@@ -409,8 +403,7 @@ inline Bitboard rider_attacks_bb(Square s, Bitboard occupied) {
                   : R == RIDER_CANNON_H ? CannonMagicsH[s]
                   : R == RIDER_CANNON_V ? CannonMagicsV[s]
                   : R == RIDER_HORSE ? HorseMagics[s]
-                  : R == RIDER_ELEPHANT ? ElephantMagics[s]
-                  : CannonDiagMagics[s];
+                  : /*R == RIDER_ELEPHANT ?*/ ElephantMagics[s];
   return m.attacks[m.index(occupied)];
 }
 

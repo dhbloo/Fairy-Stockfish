@@ -48,16 +48,9 @@ Magic CannonMagicsV[SQUARE_NB];
 Magic HorseMagics[SQUARE_NB];
 Magic ByHorseMagics[SQUARE_NB];
 Magic ElephantMagics[SQUARE_NB];
-Magic JanggiElephantMagics[SQUARE_NB];
-Magic CannonDiagMagics[SQUARE_NB];
-Magic NightriderMagics[SQUARE_NB];
-Magic GrasshopperMagicsH[SQUARE_NB];
-Magic GrasshopperMagicsV[SQUARE_NB];
-Magic GrasshopperMagicsD[SQUARE_NB];
 
 Magic* magics[] = {BishopMagics, RookMagicsH, RookMagicsV, CannonMagicsH, CannonMagicsV,
-                   HorseMagics, ElephantMagics, JanggiElephantMagics, CannonDiagMagics, NightriderMagics,
-                   GrasshopperMagicsH, GrasshopperMagicsV, GrasshopperMagicsD};
+                   HorseMagics, ElephantMagics};
 
 namespace {
 
@@ -72,12 +65,6 @@ namespace {
   Bitboard HorseTable[0x500];  // To store horse attacks
   Bitboard ByHorseTable[0x1000]; // To store attacks by horse
   Bitboard ElephantTable[0x400];  // To store elephant attacks
-  Bitboard JanggiElephantTable[0x1C000];  // To store janggi elephant attacks
-  Bitboard CannonDiagTable[0x33C00]; // To store diagonal cannon attacks
-  Bitboard NightriderTable[0x70200]; // To store nightrider attacks
-  Bitboard GrasshopperTableH[0x11800];  // To store horizontal grasshopper attacks
-  Bitboard GrasshopperTableV[0x4800];  // To store vertical grasshopper attacks
-  Bitboard GrasshopperTableD[0x33C00]; // To store diagonal grasshopper attacks
 #else
   Bitboard RookTableH[0xA00];  // To store horizontal rook attacks
   Bitboard RookTableV[0xA00];  // To store vertical rook attacks
@@ -86,12 +73,6 @@ namespace {
   Bitboard CannonTableV[0xA00];  // To store vertical cannon attacks
   Bitboard HorseTable[0x240];  // To store horse attacks
   Bitboard ElephantTable[0x1A0];  // To store elephant attacks
-  Bitboard JanggiElephantTable[0x5C00];  // To store janggi elephant attacks
-  Bitboard CannonDiagTable[0x1480]; // To store diagonal cannon attacks
-  Bitboard NightriderTable[0x1840]; // To store nightrider attacks
-  Bitboard GrasshopperTableH[0xA00];  // To store horizontal grasshopper attacks
-  Bitboard GrasshopperTableV[0xA00];  // To store vertical grasshopper attacks
-  Bitboard GrasshopperTableD[0x1480]; // To store diagonal grasshopper attacks
 #endif
 
   // Rider directions
@@ -101,13 +82,6 @@ namespace {
   const std::map<Direction, int> HorseDirections { {2 * SOUTH + WEST, 0}, {2 * SOUTH + EAST, 0}, {SOUTH + 2 * WEST, 0}, {SOUTH + 2 * EAST, 0},
                                                    {NORTH + 2 * WEST, 0}, {NORTH + 2 * EAST, 0}, {2 * NORTH + WEST, 0}, {2 * NORTH + EAST, 0} };
   const std::map<Direction, int> ElephantDirections { {2 * NORTH_EAST, 0}, {2 * SOUTH_EAST, 0}, {2 * SOUTH_WEST, 0}, {2 * NORTH_WEST, 0} };
-  const std::map<Direction, int> JanggiElephantDirections { {NORTH + 2 * NORTH_EAST, 0}, {EAST  + 2 * NORTH_EAST, 0},
-                                                            {EAST  + 2 * SOUTH_EAST, 0}, {SOUTH + 2 * SOUTH_EAST, 0},
-                                                            {SOUTH + 2 * SOUTH_WEST, 0}, {WEST  + 2 * SOUTH_WEST, 0},
-                                                            {WEST  + 2 * NORTH_WEST, 0}, {NORTH + 2 * NORTH_WEST, 0} };
-  const std::map<Direction, int> GrasshopperDirectionsV { {NORTH, 1}, {SOUTH, 1}};
-  const std::map<Direction, int> GrasshopperDirectionsH { {EAST, 1}, {WEST, 1} };
-  const std::map<Direction, int> GrasshopperDirectionsD { {NORTH_EAST, 1}, {SOUTH_EAST, 1}, {SOUTH_WEST, 1}, {NORTH_WEST, 1} };
 
   enum MovementType { RIDER, HOPPER, LAME_LEAPER, UNLIMITED_RIDER, BY_HORSE };
 
@@ -278,17 +252,13 @@ void Bitboards::init_pieces() {
                   riderTypes |= RIDER_ROOK_H;
               if (RookDirectionsV.find(d) != RookDirectionsV.end())
                   riderTypes |= RIDER_ROOK_V;
-              if (HorseDirections.find(d) != HorseDirections.end())
-                  riderTypes |= RIDER_NIGHTRIDER;
           }
           for (auto const& [d, limit] : pi->hopper[modality])
           {
               if (RookDirectionsH.find(d) != RookDirectionsH.end())
-                  riderTypes |= limit == 1 ? RIDER_GRASSHOPPER_H : RIDER_CANNON_H;
+                  riderTypes |= RIDER_CANNON_H;
               if (RookDirectionsV.find(d) != RookDirectionsV.end())
-                  riderTypes |= limit == 1 ? RIDER_GRASSHOPPER_V : RIDER_CANNON_V;
-              if (BishopDirections.find(d) != BishopDirections.end())
-                  riderTypes |= limit == 1 ? RIDER_GRASSHOPPER_D : RIDER_CANNON_DIAG;
+                  riderTypes |= RIDER_CANNON_V;
           }
       }
 
@@ -347,12 +317,6 @@ void Bitboards::init() {
   init_magics<HOPPER>(CannonTableV, CannonMagicsV, RookDirectionsV, CannonMagicVInit);
   init_magics<LAME_LEAPER>(HorseTable, HorseMagics, HorseDirections, HorseMagicInit);
   init_magics<LAME_LEAPER>(ElephantTable, ElephantMagics, ElephantDirections, ElephantMagicInit);
-  init_magics<LAME_LEAPER>(JanggiElephantTable, JanggiElephantMagics, JanggiElephantDirections, JanggiElephantMagicInit);
-  init_magics<HOPPER>(CannonDiagTable, CannonDiagMagics, BishopDirections, CannonDiagMagicInit);
-  init_magics<RIDER>(NightriderTable, NightriderMagics, HorseDirections, NightriderMagicInit);
-  init_magics<HOPPER>(GrasshopperTableH, GrasshopperMagicsH, GrasshopperDirectionsH, GrasshopperMagicHInit);
-  init_magics<HOPPER>(GrasshopperTableV, GrasshopperMagicsV, GrasshopperDirectionsV, GrasshopperMagicVInit);
-  init_magics<HOPPER>(GrasshopperTableD, GrasshopperMagicsD, GrasshopperDirectionsD, GrasshopperMagicDInit);
 #else
   init_magics<RIDER>(RookTableH, RookMagicsH, RookDirectionsH);
   init_magics<RIDER>(RookTableV, RookMagicsV, RookDirectionsV);
@@ -361,12 +325,6 @@ void Bitboards::init() {
   init_magics<HOPPER>(CannonTableV, CannonMagicsV, RookDirectionsV);
   init_magics<LAME_LEAPER>(HorseTable, HorseMagics, HorseDirections);
   init_magics<LAME_LEAPER>(ElephantTable, ElephantMagics, ElephantDirections);
-  init_magics<LAME_LEAPER>(JanggiElephantTable, JanggiElephantMagics, JanggiElephantDirections);
-  init_magics<HOPPER>(CannonDiagTable, CannonDiagMagics, BishopDirections);
-  init_magics<RIDER>(NightriderTable, NightriderMagics, HorseDirections);
-  init_magics<HOPPER>(GrasshopperTableH, GrasshopperMagicsH, GrasshopperDirectionsH);
-  init_magics<HOPPER>(GrasshopperTableV, GrasshopperMagicsV, GrasshopperDirectionsV);
-  init_magics<HOPPER>(GrasshopperTableD, GrasshopperMagicsD, GrasshopperDirectionsD);
 #endif
 
   init_magics<BY_HORSE>(ByHorseTable, ByHorseMagics, HorseDirections);
