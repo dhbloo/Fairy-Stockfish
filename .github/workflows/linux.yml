@@ -1,4 +1,4 @@
-name: 32Buckets
+name: 64Buckets - Linux
 
 on:
   push:
