@@ -303,7 +303,6 @@ enum FenValidation : int {
     FEN_INVALID_BOARD_GEOMETRY = -8,
     FEN_INVALID_POCKET_INFO = -7,
     FEN_INVALID_SIDE_TO_MOVE = -6,
-    FEN_INVALID_CASTLING_INFO = -5,
     FEN_INVALID_EN_PASSANT_SQ = -4,
     FEN_INVALID_NUMBER_OF_KINGS = -3,
     FEN_INVALID_HALF_MOVE_COUNTER = -2,
@@ -499,25 +498,6 @@ inline Validation check_touching_kings(const CharBoard& board, const std::array<
     return OK;
 }
 
-inline Validation fill_castling_info_splitted(const std::string& castlingInfo, std::array<std::string, 2>& castlingInfoSplitted) {
-    for (char c : castlingInfo)
-    {
-        if (c != '-')
-        {
-            if (!isalpha(c))
-            {
-                std::cerr << "Invalid castling specification: '" << c << "'." << std::endl;
-                return NOK;
-            }
-            else if (isupper(c))
-                castlingInfoSplitted[WHITE] += tolower(c);
-            else
-                castlingInfoSplitted[BLACK] += c;
-        }
-    }
-    return OK;
-}
-
 inline std::string color_to_string(Color c) {
     switch (c)
     {
@@ -529,34 +509,6 @@ inline std::string color_to_string(Color c) {
         return "COLOR_NB";
     default:
         return "INVALID_COLOR";
-    }
-}
-
-inline std::string castling_rights_to_string(CastlingRights castlingRights) {
-    switch (castlingRights)
-    {
-    case KING_SIDE:
-        return "KING_SIDE";
-    case QUEEN_SIDE:
-        return "QUEENS_SIDE";
-    case WHITE_OO:
-        return "WHITE_OO";
-    case WHITE_OOO:
-        return "WHITE_OOO";
-    case BLACK_OO:
-        return "BLACK_OO";
-    case BLACK_OOO:
-        return "BLACK_OOO";
-    case WHITE_CASTLING:
-        return "WHITE_CASTLING";
-    case BLACK_CASTLING:
-        return "BLACK_CASTLING";
-    case ANY_CASTLING:
-        return "ANY_CASTLING";
-    case CASTLING_RIGHT_NB:
-        return "CASTLING_RIGHT_NB";
-    default:
-        return "INVALID_CASTLING_RIGHTS";
     }
 }
 

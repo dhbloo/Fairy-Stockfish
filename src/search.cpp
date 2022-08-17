@@ -1860,19 +1860,6 @@ namespace Stockfish {
             ProbeDepth = 0;
         }
 
-        if (Cardinality >= popcount(pos.pieces()) && !pos.can_castle(ANY_CASTLING))
-        {
-            // Rank moves using DTZ tables
-            RootInTB = root_probe(pos, rootMoves);
-
-            if (!RootInTB)
-            {
-                // DTZ tables are missing; try to rank moves using WDL tables
-                dtz_available = false;
-                RootInTB = root_probe_wdl(pos, rootMoves);
-            }
-        }
-
         if (RootInTB)
         {
             // Sort moves according to TB rank

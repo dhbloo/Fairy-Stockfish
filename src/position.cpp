@@ -223,7 +223,6 @@ namespace Stockfish {
 
         // 3-4. Skip parsing castling and en passant flags if not present
         st->epSquare = SQ_NONE;
-        st->castlingKingSquare[WHITE] = st->castlingKingSquare[BLACK] = SQ_NONE;
 
         // Check counter for nCheck
         ss >> std::skipws >> token >> std::noskipws;
@@ -410,8 +409,7 @@ namespace Stockfish {
         }
 
         ss << (sideToMove == WHITE ? " w " : " b ");
-        if (!can_castle(ANY_CASTLING))
-            ss << '-';
+        ss << '-';
 
         ss << (ep_square() == SQ_NONE ? " - " : " " + UCI::square(*this, ep_square()) + " ");
 

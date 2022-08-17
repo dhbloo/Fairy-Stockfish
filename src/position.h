@@ -46,13 +46,11 @@ struct StateInfo {
   Key    pawnKey;
   Key    materialKey;
   Value  nonPawnMaterial[COLOR_NB];
-  int    castlingRights;
   int    rule50;
   int    pliesFromNull;
   int    countingPly;
   CheckCount checksRemaining[COLOR_NB];
   Square epSquare;
-  Square castlingKingSquare[COLOR_NB];
   Bitboard gatesBB[COLOR_NB];
 
   // Not copied when making a move (will be recomputed anyhow)
@@ -198,7 +196,6 @@ public:
   Piece piece_on(Square s) const;
   Piece unpromoted_piece_on(Square s) const;
   Square ep_square() const;
-  Square castling_king_square(Color c) const;
   Bitboard gates(Color c) const;
   bool empty(Square s) const;
   int count(Color c, PieceType pt) const;
@@ -207,12 +204,6 @@ public:
   template<PieceType Pt> Square square(Color c) const;
   Square square(Color c, PieceType pt) const;
   bool is_on_semiopen_file(Color c, Square s) const;
-
-  // Castling
-  CastlingRights castling_rights(Color c) const;
-  bool can_castle(CastlingRights cr) const;
-  bool castling_impeded(CastlingRights cr) const;
-  Square castling_rook_square(CastlingRights cr) const;
 
   // Checking
   Bitboard checkers() const;
@@ -305,9 +296,6 @@ private:
   Bitboard byTypeBB[PIECE_TYPE_NB];
   Bitboard byColorBB[COLOR_NB];
   int pieceCount[PIECE_NB];
-  int castlingRightsMask[SQUARE_NB];
-  Square castlingRookSquare[CASTLING_RIGHT_NB];
-  Bitboard castlingPath[CASTLING_RIGHT_NB];
   Thread* thisThread;
   StateInfo* st;
   int gamePly;
@@ -851,10 +839,6 @@ inline Square Position::ep_square() const {
   return st->epSquare;
 }
 
-inline Square Position::castling_king_square(Color c) const {
-  return st->castlingKingSquare[c];
-}
-
 inline Bitboard Position::gates(Color c) const {
   assert(var != nullptr);
   return st->gatesBB[c];
@@ -862,26 +846,6 @@ inline Bitboard Position::gates(Color c) const {
 
 inline bool Position::is_on_semiopen_file(Color c, Square s) const {
   return !((pieces(c, PAWN) | pieces(c, SHOGI_PAWN, SOLDIER)) & file_bb(s));
-}
-
-inline bool Position::can_castle(CastlingRights cr) const {
-  return st->castlingRights & cr;
-}
-
-inline CastlingRights Position::castling_rights(Color c) const {
-  return c & CastlingRights(st->castlingRights);
-}
-
-inline bool Position::castling_impeded(CastlingRights cr) const {
-  assert(cr == WHITE_OO || cr == WHITE_OOO || cr == BLACK_OO || cr == BLACK_OOO);
-
-  return pieces() & castlingPath[cr];
-}
-
-inline Square Position::castling_rook_square(CastlingRights cr) const {
-  assert(cr == WHITE_OO || cr == WHITE_OOO || cr == BLACK_OO || cr == BLACK_OOO);
-
-  return castlingRookSquare[cr];
 }
 
 inline Bitboard Position::attacks_from(Color c, PieceType pt, Square s) const {
