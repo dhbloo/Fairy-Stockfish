@@ -286,14 +286,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("doubleStepRank", v->doubleStepRank);
     parse_attribute("doubleStepRankMin", v->doubleStepRankMin);
     parse_attribute("enPassantRegion", v->enPassantRegion);
-    parse_attribute("castling", v->castling);
-    parse_attribute("castlingDroppedPiece", v->castlingDroppedPiece);
-    parse_attribute("castlingKingsideFile", v->castlingKingsideFile);
-    parse_attribute("castlingQueensideFile", v->castlingQueensideFile);
-    parse_attribute("castlingRank", v->castlingRank);
-    parse_attribute("castlingKingFile", v->castlingKingFile);
-    parse_attribute("castlingKingPiece", v->castlingKingPiece, v->pieceToChar);
-    parse_attribute("castlingRookPiece", v->castlingRookPiece, v->pieceToChar);
     parse_attribute("checking", v->checking);
     parse_attribute("dropChecks", v->dropChecks);
     parse_attribute("mustDrop", v->mustDrop);
@@ -399,10 +391,6 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
         }
         if (v->doubleStep && v->doubleStepRankMin > v->doubleStepRank)
             std::cerr << "Inconsistent settings: doubleStepRankMin > doubleStepRank." << std::endl;
-        if (v->castling && v->castlingRank > v->maxRank)
-            std::cerr << "Inconsistent settings: castlingRank > maxRank." << std::endl;
-        if (v->castling && v->castlingQueensideFile > v->castlingKingsideFile)
-            std::cerr << "Inconsistent settings: castlingQueensideFile > castlingKingsideFile." << std::endl;
 
         // Check for limitations
 

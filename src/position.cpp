@@ -224,47 +224,6 @@ namespace Stockfish {
         // 3-4. Skip parsing castling and en passant flags if not present
         st->epSquare = SQ_NONE;
         st->castlingKingSquare[WHITE] = st->castlingKingSquare[BLACK] = SQ_NONE;
-        if (!isdigit(ss.peek()) && !sfen)
-        {
-            // 3. Castling availability. Compatible with 3 standards: Normal FEN standard,
-            // Shredder-FEN that uses the letters of the columns on which the rooks began
-            // the game instead of KQkq and also X-FEN standard that, in case of Chess960,
-            // if an inner rook is associated with the castling right, the castling tag is
-            // replaced by the file letter of the involved rook, as for the Shredder-FEN.
-            while ((ss >> token) && !isspace(token))
-            {
-                Square rsq;
-                Color c = islower(token) ? BLACK : WHITE;
-                Piece rook = make_piece(c, castling_rook_piece());
-
-                token = char(toupper(token));
-
-                if (token == 'K')
-                    for (rsq = make_square(FILE_MAX, castling_rank(c)); piece_on(rsq) != rook; --rsq) {}
-
-                else if (token == 'Q')
-                    for (rsq = make_square(FILE_A, castling_rank(c)); piece_on(rsq) != rook; ++rsq) {}
-
-                else if (token >= 'A' && token <= 'A' + max_file())
-                    rsq = make_square(File(token - 'A'), castling_rank(c));
-
-                else
-                    continue;
-
-                // Determine castling "king" position
-                if (castling_enabled() && st->castlingKingSquare[c] == SQ_NONE)
-                {
-                    Bitboard castlingKings = pieces(c, castling_king_piece()) & rank_bb(castling_rank(c));
-                    // Ambiguity resolution for 960 variants with more than one "king"
-                    // e.g., EAH means that an e-file king can castle with a- and h-file rooks
-                    st->castlingKingSquare[c] = castlingKings && (!more_than_one(castlingKings)) ? lsb(castlingKings)
-                        : make_square(castling_king_file(), castling_rank(c));
-                }
-
-                if (castling_enabled() && piece_on(rsq) == rook)
-                    set_castling_right(c, rsq);
-            }
-        }
 
         // Check counter for nCheck
         ss >> std::skipws >> token >> std::noskipws;
@@ -310,28 +269,6 @@ namespace Stockfish {
         assert(pos_is_ok());
 
         return *this;
-    }
-
-
-    /// Position::set_castling_right() is a helper function used to set castling
-    /// rights given the corresponding color and the rook starting square.
-
-    void Position::set_castling_right(Color c, Square rfrom) {
-
-        assert(st->castlingKingSquare[c] != SQ_NONE);
-        Square kfrom = st->castlingKingSquare[c];
-        CastlingRights cr = c & (kfrom < rfrom ? KING_SIDE : QUEEN_SIDE);
-
-        st->castlingRights |= cr;
-        castlingRightsMask[kfrom] |= cr;
-        castlingRightsMask[rfrom] |= cr;
-        castlingRookSquare[cr] = rfrom;
-
-        Square kto = make_square(cr & KING_SIDE ? castling_kingside_file() : castling_queenside_file(), castling_rank(c));
-        Square rto = kto + (cr & KING_SIDE ? WEST : EAST);
-
-        castlingPath[cr] = (between_bb(rfrom, rto) | between_bb(kfrom, kto))
-            & ~(kfrom | rfrom);
     }
 
 
@@ -939,40 +876,6 @@ namespace Stockfish {
     }
 
 
-    /// Position::do_castling() is a helper used to do/undo a castling move. This
-    /// is a bit tricky in Chess960 where from/to squares can overlap.
-    template<bool Do>
-    void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto) {
-
-        bool kingSide = to > from;
-        rfrom = to; // Castling is encoded as "king captures friendly rook"
-        to = make_square(kingSide ? castling_kingside_file() : castling_queenside_file(), castling_rank(us));
-        rto = to + (kingSide ? WEST : EAST);
-
-        Piece castlingKingPiece = piece_on(Do ? from : to);
-        Piece castlingRookPiece = piece_on(Do ? rfrom : rto);
-
-        if (Do && Eval::useNNUE)
-        {
-            auto& dp = st->dirtyPiece;
-            dp.piece[0] = castlingKingPiece;
-            dp.from[0] = from;
-            dp.to[0] = to;
-            dp.piece[1] = castlingRookPiece;
-            dp.from[1] = rfrom;
-            dp.to[1] = rto;
-            dp.dirty_num = 2;
-        }
-
-        // Remove both pieces first since squares could overlap in Chess960
-        remove_piece(Do ? from : to);
-        remove_piece(Do ? rfrom : rto);
-        board[Do ? from : to] = board[Do ? rfrom : rto] = NO_PIECE; // Since remove_piece doesn't do it for us
-        put_piece(castlingKingPiece, Do ? to : from);
-        put_piece(castlingRookPiece, Do ? rto : rfrom);
-    }
-
-
     /// Position::do_null_move() is used to do a "null move": it flips
     /// the side to move without executing any move on the board.
 
@@ -1523,18 +1426,6 @@ namespace Stockfish {
                 if (pieceCount[pc] != popcount(pieces(c, pt))
                     || pieceCount[pc] != std::count(board, board + SQUARE_NB, pc))
                     assert(0 && "pos_is_ok: Pieces");
-            }
-
-        for (Color c : { WHITE, BLACK })
-            for (CastlingRights cr : {c& KING_SIDE, c& QUEEN_SIDE})
-            {
-                if (!can_castle(cr))
-                    continue;
-
-                if (piece_on(castlingRookSquare[cr]) != make_piece(c, castling_rook_piece())
-                    || castlingRightsMask[castlingRookSquare[cr]] != cr
-                    || (count<KING>(c) && (castlingRightsMask[square<KING>(c)] & cr) != cr))
-                    assert(0 && "pos_is_ok: Castling");
             }
 
         return true;

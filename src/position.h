@@ -133,14 +133,6 @@ public:
   bool double_step_enabled() const;
   Rank double_step_rank_max() const;
   Rank double_step_rank_min() const;
-  bool castling_enabled() const;
-  bool castling_dropped_piece() const;
-  File castling_kingside_file() const;
-  File castling_queenside_file() const;
-  Rank castling_rank(Color c) const;
-  File castling_king_file() const;
-  PieceType castling_king_piece() const;
-  PieceType castling_rook_piece() const;
   PieceType king_type() const;
   PieceType nnue_king() const;
   Square nnue_king_square(Color c) const;
@@ -301,14 +293,11 @@ public:
 
 private:
   // Initialization helpers (used while setting up a position)
-  void set_castling_right(Color c, Square rfrom);
   void set_state(StateInfo* si) const;
   void set_check_info(StateInfo* si) const;
 
   // Other helpers
   void move_piece(Square from, Square to);
-  template<bool Do>
-  void do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto);
 
   // Data members
   Piece board[SQUARE_NB];
@@ -446,46 +435,6 @@ inline Rank Position::double_step_rank_max() const {
 inline Rank Position::double_step_rank_min() const {
   assert(var != nullptr);
   return var->doubleStepRankMin;
-}
-
-inline bool Position::castling_enabled() const {
-  assert(var != nullptr);
-  return false;
-}
-
-inline bool Position::castling_dropped_piece() const {
-  assert(var != nullptr);
-  return var->castlingDroppedPiece;
-}
-
-inline File Position::castling_kingside_file() const {
-  assert(var != nullptr);
-  return var->castlingKingsideFile;
-}
-
-inline File Position::castling_queenside_file() const {
-  assert(var != nullptr);
-  return var->castlingQueensideFile;
-}
-
-inline Rank Position::castling_rank(Color c) const {
-  assert(var != nullptr);
-  return relative_rank(c, var->castlingRank, max_rank());
-}
-
-inline File Position::castling_king_file() const {
-  assert(var != nullptr);
-  return var->castlingKingFile;
-}
-
-inline PieceType Position::castling_king_piece() const {
-  assert(var != nullptr);
-  return var->castlingKingPiece;
-}
-
-inline PieceType Position::castling_rook_piece() const {
-  assert(var != nullptr);
-  return var->castlingRookPiece;
 }
 
 inline PieceType Position::king_type() const {

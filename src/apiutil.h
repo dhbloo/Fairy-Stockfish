@@ -560,80 +560,6 @@ inline std::string castling_rights_to_string(CastlingRights castlingRights) {
     }
 }
 
-inline Validation check_castling_rank(const std::array<std::string, 2>& castlingInfoSplitted, const CharBoard& board,
-                            const std::array<CharSquare, 2>& kingPositions, const Variant* v) {
-
-    for (Color c : {WHITE, BLACK})
-    {
-        const Rank castlingRank = relative_rank(c, v->castlingRank, v->maxRank);
-        char rookChar = v->pieceToChar[make_piece(c, v->castlingRookPiece)];
-        for (char castlingFlag : castlingInfoSplitted[c])
-        {
-            if (tolower(castlingFlag) == 'k' || tolower(castlingFlag) == 'q')
-            {
-                if (kingPositions[c].rowIdx != castlingRank)
-                {
-                    std::cerr << "The " << color_to_string(c) << " king must be on rank " << castlingRank << " if castling is enabled for " << color_to_string(c) << "." << std::endl;
-                    return NOK;
-                }
-                bool kingside = tolower(castlingFlag) == 'k';
-                bool castlingRook = false;
-                for (int f = kingside ? board.get_nb_files() - 1 : 0; f != kingPositions[c].fileIdx; kingside ? f-- : f++)
-                    if (board.get_piece(castlingRank, f) == rookChar)
-                    {
-                        castlingRook = true;
-                        break;
-                    }
-                if (!castlingRook)
-                {
-                    std::cerr << "No castling rook for flag " << castlingFlag << std::endl;
-                    return NOK;
-                }
-            }
-            else if (board.get_piece(castlingRank, tolower(castlingFlag) - 'a') == ' ')
-            {
-                std::cerr << "No gating piece for flag " << castlingFlag << std::endl;
-                return NOK;
-            }
-        }
-    }
-    return OK;
-}
-
-inline Validation check_standard_castling(std::array<std::string, 2>& castlingInfoSplitted, const CharBoard& board,
-                             const std::array<CharSquare, 2>& kingPositions, const std::array<CharSquare, 2>& kingPositionsStart,
-                             const std::array<std::vector<CharSquare>, 2>& rookPositionsStart, const Variant* v) {
-
-    for (Color c : {WHITE, BLACK})
-    {
-        if (castlingInfoSplitted[c].size() == 0)
-            continue;
-        if (kingPositions[c] != kingPositionsStart[c])
-        {
-            std::cerr << "The " << color_to_string(c) << " KING has moved. Castling is no longer valid for " << color_to_string(c) << "." << std::endl;
-            return NOK;
-        }
-
-        for (CastlingRights castling: {KING_SIDE, QUEEN_SIDE})
-        {
-            CharSquare rookStartingSquare = castling == QUEEN_SIDE ? rookPositionsStart[c][0] : rookPositionsStart[c][1];
-            char targetChar = castling == QUEEN_SIDE ? 'q' : 'k';
-            char rookChar = v->pieceToChar[make_piece(c, v->castlingRookPiece)];
-            if (castlingInfoSplitted[c].find(targetChar) != std::string::npos)
-            {
-                if (board.get_piece(rookStartingSquare.rowIdx, rookStartingSquare.fileIdx) != rookChar)
-                {
-                    std::cerr << "The " << color_to_string(c) << " ROOK on the "<<  castling_rights_to_string(castling) << " has moved. "
-                              << castling_rights_to_string(castling) << " castling is no longer valid for " << color_to_string(c) << "." << std::endl;
-                    return NOK;
-                }
-            }
-
-        }
-    }
-    return OK;
-}
-
 inline Validation check_pocket_info(const std::string& fenBoard, int nbRanks, const Variant* v, std::string& pocket) {
 
     char stopChar;
@@ -851,43 +777,6 @@ inline FenValidation validate_fen(const std::string& fen, const Variant* v, bool
 
     // Castling and en passant can be skipped
     bool skipCastlingAndEp = fenParts.size() >= 4 && fenParts.size() <= 5 && isdigit(fenParts[2][0]);
-
-    // 3) Part
-    // check castling rights
-    if (fenParts.size() >= 3 && !skipCastlingAndEp && v->castling)
-    {
-        std::array<std::string, 2> castlingInfoSplitted;
-        if (fill_castling_info_splitted(fenParts[2], castlingInfoSplitted) == NOK)
-            return FEN_INVALID_CASTLING_INFO;
-
-        if (castlingInfoSplitted[WHITE].size() != 0 || castlingInfoSplitted[BLACK].size() != 0)
-        {
-            std::array<CharSquare, 2> kingPositions;
-            kingPositions[WHITE] = board.get_square_for_piece(toupper(v->pieceToChar[v->castlingKingPiece]));
-            kingPositions[BLACK] = board.get_square_for_piece(tolower(v->pieceToChar[v->castlingKingPiece]));
-
-            CharBoard startBoard(board.get_nb_ranks(), board.get_nb_files());
-            fill_char_board(startBoard, v->startFen, validSpecialCharactersFirstField, v);
-
-            // Check pieces present on castling rank against castling/gating rights
-            if (check_castling_rank(castlingInfoSplitted, board, kingPositions, v) == NOK)
-                return FEN_INVALID_CASTLING_INFO;
-
-            // only check exact squares if starting position of castling pieces is known
-            if (!v->chess960 && !v->castlingDroppedPiece && !chess960)
-            {
-                std::array<CharSquare, 2> kingPositionsStart;
-                kingPositionsStart[WHITE] = startBoard.get_square_for_piece(v->pieceToChar[make_piece(WHITE, v->castlingKingPiece)]);
-                kingPositionsStart[BLACK] = startBoard.get_square_for_piece(v->pieceToChar[make_piece(BLACK, v->castlingKingPiece)]);
-                std::array<std::vector<CharSquare>, 2> rookPositionsStart;
-                rookPositionsStart[WHITE] = startBoard.get_squares_for_piece(v->pieceToChar[make_piece(WHITE, v->castlingRookPiece)]);
-                rookPositionsStart[BLACK] = startBoard.get_squares_for_piece(v->pieceToChar[make_piece(BLACK, v->castlingRookPiece)]);
-
-                if (check_standard_castling(castlingInfoSplitted, board, kingPositions, kingPositionsStart, rookPositionsStart, v) == NOK)
-                    return FEN_INVALID_CASTLING_INFO;
-            }
-        }
-    }
 
     // 5) Part
     // check check count

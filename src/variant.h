@@ -63,14 +63,6 @@ struct Variant {
   Rank doubleStepRank = RANK_2;
   Rank doubleStepRankMin = RANK_2;
   Bitboard enPassantRegion = AllSquares;
-  bool castling = true;
-  bool castlingDroppedPiece = false;
-  File castlingKingsideFile = FILE_G;
-  File castlingQueensideFile = FILE_C;
-  Rank castlingRank = RANK_1;
-  File castlingKingFile = FILE_E;
-  PieceType castlingKingPiece = KING;
-  PieceType castlingRookPiece = ROOK;
   PieceType kingType = KING;
   bool checking = true;
   bool dropChecks = true;

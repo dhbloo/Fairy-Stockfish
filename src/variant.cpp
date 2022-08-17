@@ -32,15 +32,6 @@ namespace Stockfish {
 VariantMap variants; // Global object
 
 namespace {
-    // Pseudo-variant only used for endgame initialization
-    Variant* fairy_variant() {
-        Variant* v = new Variant();
-        v->pieceToCharTable = "PNBRQ................Kpnbrq................k";
-        v->add_piece(SILVER, 's');
-        v->add_piece(FERS, 'f');
-        return v;
-    }
-
     Variant* xiangqi_variant() {
         Variant* v = new Variant();
         v->variantTemplate = "xiangqi";
@@ -62,7 +53,6 @@ namespace {
         v->kingType = WAZIR;
         v->promotionPieceTypes = {};
         v->doubleStep = false;
-        v->castling = false;
         v->stalemateValue = -VALUE_MATE;
         v->soldierPromotionRank = RANK_6;
         return v;
@@ -74,8 +64,6 @@ namespace {
 /// VariantMap::init() is called at startup to initialize all predefined variants
 
 void VariantMap::init() {
-    // Add to UCI_Variant option
-    add("fairy", fairy_variant()); // fairy variant used for endgame code initialization
     add("xiangqi", xiangqi_variant());
 }
 
