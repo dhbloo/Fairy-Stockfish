@@ -21,7 +21,6 @@
 #include <fstream>
 #include <sstream>
 
-#include "parser.h"
 #include "piece.h"
 #include "variant.h"
 
@@ -66,87 +65,6 @@ namespace {
 void VariantMap::init() {
     add("xiangqi", xiangqi_variant());
 }
-
-
-/// VariantMap::parse_istream reads variants from an INI-style configuration input stream.
-
-template <bool DoCheck>
-void VariantMap::parse_istream(std::istream& file) {
-    std::string variant, variant_template, key, value, input;
-    while (file.peek() != '[' && std::getline(file, input)) {}
-
-    std::vector<std::string> varsToErase = {};
-    while (file.get() && std::getline(std::getline(file, variant, ']'), input))
-    {
-        // Extract variant template, if specified
-        if (!std::getline(std::getline(std::stringstream(variant), variant, ':'), variant_template))
-            variant_template = "";
-
-        // Read variant rules
-        Config attribs = {};
-        while (file.peek() != '[' && std::getline(file, input))
-        {
-            if (!input.empty() && input.back() == '\r')
-                input.pop_back();
-            std::stringstream ss(input);
-            if (ss.peek() != ';' && ss.peek() != '#')
-            {
-                if (DoCheck && !input.empty() && input.find('=') == std::string::npos)
-                    std::cerr << "Invalid sytax: '" << input << "'." << std::endl;
-                if (std::getline(std::getline(ss, key, '=') >> std::ws, value) && !key.empty())
-                    attribs[key.erase(key.find_last_not_of(" ") + 1)] = value;
-            }
-        }
-
-        // Create variant
-        if (variants.find(variant) != variants.end())
-            std::cerr << "Variant '" << variant << "' already exists." << std::endl;
-        else if (!variant_template.empty() && variants.find(variant_template) == variants.end())
-            std::cerr << "Variant template '" << variant_template << "' does not exist." << std::endl;
-        else
-        {
-            if (DoCheck)
-                std::cerr << "Parsing variant: " << variant << std::endl;
-            Variant* v = !variant_template.empty() ? VariantParser<DoCheck>(attribs).parse((new Variant(*variants.find(variant_template)->second))->init())
-                                                   : VariantParser<DoCheck>(attribs).parse();
-            if (v->maxFile <= FILE_MAX && v->maxRank <= RANK_MAX)
-            {
-                add(variant, v);
-                // In order to allow inheritance, we need to temporarily add configured variants
-                // even when only checking them, but we remove them later after parsing is finished.
-                if (DoCheck)
-                    varsToErase.push_back(variant);
-            }
-            else
-                delete v;
-        }
-    }
-    // Clean up temporary variants
-    for (std::string tempVar : varsToErase)
-    {
-        delete variants[tempVar];
-        variants.erase(tempVar);
-    }
-}
-
-/// VariantMap::parse reads variants from an INI-style configuration file.
-
-template <bool DoCheck>
-void VariantMap::parse(std::string path) {
-    if (path.empty() || path == "<empty>")
-        return;
-    std::ifstream file(path);
-    if (!file.is_open())
-    {
-        std::cerr << "Unable to open file " << path << std::endl;
-        return;
-    }
-    parse_istream<DoCheck>(file);
-    file.close();
-}
-
-template void VariantMap::parse<true>(std::string path);
-template void VariantMap::parse<false>(std::string path);
 
 void VariantMap::add(std::string s, Variant* v) {
   insert(std::pair<std::string, const Variant*>(s, v->conclude()));

@@ -235,48 +235,6 @@ namespace {
      return int(0.5 + 1000 / (1 + std::exp((a - x) / b)));
   }
 
-  // load() is called when engine receives the "load" or "check" command.
-  // The function reads variant configuration files.
-
-  void load(istringstream& is, bool check = false) {
-
-    string token;
-    std::getline(is >> std::ws, token);
-
-    // The argument to load either is a here-doc or a file path
-    if (token.rfind("<<", 0) == 0)
-    {
-        // Trim the EOF marker
-        if (!(stringstream(token.substr(2)) >> token))
-            token = "";
-
-        // Parse variant config till EOF marker
-        stringstream ss;
-        std::string line;
-        while (std::getline(cin, line) && line != token)
-            ss << line << std::endl;
-        if (check)
-            variants.parse_istream<true>(ss);
-        else
-        {
-            variants.parse_istream<false>(ss);
-            Options["UCI_Variant"].set_combo(variants.get_keys());
-        }
-    }
-    else
-    {
-        // store path if non-empty after trimming
-        std::size_t end = token.find_last_not_of(' ');
-        if (end != std::string::npos)
-        {
-            if (check)
-                variants.parse<true>(token.erase(end + 1));
-            else
-                Options["VariantPath"] = token.erase(end + 1);
-        }
-    }
-  }
-
 } // namespace
 
 
@@ -300,19 +258,6 @@ void UCI::loop(int argc, char* argv[]) {
       cmd += std::string(argv[i]) + " ";
   // UCCI banmoves state
   std::vector<Move> banmoves = {};
-
-  if (argc > 1 && (std::strcmp(argv[1], "noautoload") == 0))
-  {
-      cmd = "";
-      argc = 1;
-  }
-  else if (argc == 1 || !(std::strcmp(argv[1], "load") == 0))
-  {
-      // Check environment for variants.ini file
-      char *envVariantPath = std::getenv("FAIRY_STOCKFISH_VARIANT_PATH");
-      if (envVariantPath != NULL)
-          Options["VariantPath"] = std::string(envVariantPath);
-  }
 
   do {
       if (argc == 1 && !getline(cin, cmd)) // Block here waiting for input or EOF
@@ -367,8 +312,6 @@ void UCI::loop(int argc, char* argv[]) {
               filename = f;
           Eval::NNUE::save_eval(filename);
       }
-      else if (token == "load")     { load(is); argc = 1; } // continue reading stdin
-      else if (token == "check")    load(is, true);
       // UCI-Cyclone omits the "position" keyword
       else if (token == "fen" || token == "startpos")
       {
