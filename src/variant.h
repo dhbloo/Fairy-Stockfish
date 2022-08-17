@@ -48,26 +48,6 @@ struct Variant {
   std::string startFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
   Bitboard mobilityRegion[COLOR_NB][PIECE_TYPE_NB] = {};
   Bitboard boardbb[COLOR_NB][PIECE_TYPE_NB] = {};
-  std::set<PieceType, std::greater<PieceType> > promotionPieceTypes = { QUEEN, ROOK, BISHOP, KNIGHT };
-
-  // game end
-  int nFoldRule = 3;
-  Value nFoldValue = VALUE_DRAW;
-  bool nFoldValueAbsolute = false;
-  bool perpetualCheckIllegal = true;
-  bool moveRepetitionIllegal = false;
-  Value stalemateValue = VALUE_DRAW;
-  bool stalematePieceCount = false; // multiply stalemate value by sign(count(~stm) - count(stm))
-  Value checkmateValue = -VALUE_MATE;
-  Value extinctionValue = VALUE_NONE;
-  bool extinctionClaim = false;
-  bool extinctionPseudoRoyal = false;
-  std::set<PieceType> extinctionPieceTypes = {};
-  int extinctionPieceCount = 0;
-  int extinctionOpponentPieceCount = 0;
-  bool flagMove = false;
-  int connectN = 0;
-  MaterialCounting materialCounting = NO_MATERIAL_COUNTING;
 
   std::string nnueAlias = "";
   PieceType nnueKing = KING;

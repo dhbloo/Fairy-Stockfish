@@ -255,8 +255,7 @@ inline const std::string move_to_san(Position& pos, Move m, Notation n) {
 inline bool has_insufficient_material(Color c, const Position& pos) {
 
     // Other win rules
-    if (   pos.count_in_hand(c, ALL_PIECES)
-        || (pos.extinction_value() != VALUE_NONE && !pos.extinction_pseudo_royal()))
+    if (pos.count_in_hand(c, ALL_PIECES))
         return false;
 
     // Restricted pieces
@@ -270,7 +269,7 @@ inline bool has_insufficient_material(Color c, const Position& pos) {
 
     // Mating pieces
     for (PieceType pt : { ROOK, QUEEN, ARCHBISHOP, CHANCELLOR, SILVER, GOLD, COMMONER, CENTAUR })
-        if ((pos.pieces(c, pt) & ~restricted) || (pos.count(c, PAWN) && pos.promotion_piece_types().find(pt) != pos.promotion_piece_types().end()))
+        if ((pos.pieces(c, pt) & ~restricted))
             return false;
 
     // Color-bound pieces
@@ -642,9 +641,6 @@ inline Validation check_digit_field(const std::string& field) {
 
 inline std::string get_valid_special_chars(const Variant* v) {
     std::string validSpecialCharactersFirstField = "/";
-    // Whether or not '-', '+', '~', '[', ']' are valid depends on the variant being played.
-    if (!v->promotionPieceTypes.empty())
-        validSpecialCharactersFirstField += '~';
     return validSpecialCharactersFirstField;
 }
 

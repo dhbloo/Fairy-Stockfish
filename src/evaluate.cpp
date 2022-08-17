@@ -444,7 +444,7 @@ namespace {
         Square s = pop_lsb(b1);
 
         // Find attacked squares, including x-ray attacks for bishops and rooks
-        b = Pt == ROOK && !pos.diagonal_lines() ? attacks_bb<  ROOK>(s, pos.pieces() ^ pos.pieces(QUEEN) ^ pos.pieces(Us, ROOK))
+        b = Pt == ROOK ? attacks_bb<  ROOK>(s, pos.pieces() ^ pos.pieces(QUEEN) ^ pos.pieces(Us, ROOK))
             : pos.attacks_from(Us, Pt, s);
 
         // Restrict mobility to actual squares of board
@@ -665,8 +665,7 @@ namespace {
                  +  69 * kingAttacksCount[Them]
                  +   3 * kingFlankAttack * kingFlankAttack / 8
                  +       mg_value(mobility[Them] - mobility[Us])
-                 - 873 * !pos.major_pieces(Them)
-                       * 2 / (2 + (pos.diagonal_lines() ? 1 : 2))
+                 - 873 * !pos.major_pieces(Them) / 2
                  - 100 * bool(attackedBy[Us][KNIGHT] & attackedBy[Us][KING])
                  -   6 * mg_value(score) / 8
                  -   4 * kingFlankDefense
@@ -704,21 +703,6 @@ namespace {
 
     Bitboard b, weak, defended, nonPawnEnemies, stronglyProtected, safe;
     Score score = SCORE_ZERO;
-
-    // Extinction threats
-    if (pos.extinction_value() == -VALUE_MATE)
-    {
-        Bitboard bExt = attackedBy[Us][ALL_PIECES] & pos.pieces(Them);
-        for (PieceType pt : pos.extinction_piece_types())
-        {
-            if (pt == ALL_PIECES)
-                continue;
-            int denom = std::max(pos.count_with_hand(Them, pt) - pos.extinction_piece_count(), 1);
-            // Explosion threats
-                // Direct extinction threats
-                score += make_score(1000, 1000) / (denom * denom) * popcount(bExt & pos.pieces(Them, pt));
-        }
-    }
 
     // Non-pawn enemies
     nonPawnEnemies = pos.pieces(Them) & ~pos.pieces(PAWN, SHOGI_PAWN) & ~pos.pieces(SOLDIER);
@@ -795,7 +779,7 @@ namespace {
     constexpr Direction Down = -Up;
 
     auto king_proximity = [&](Color c, Square s) {
-      return pos.extinction_value() == VALUE_MATE ? 0 : pos.count<KING>(c) ? std::min(distance(pos.square<KING>(c), s), 5) : 5;
+      return pos.count<KING>(c) ? std::min(distance(pos.square<KING>(c), s), 5) : 5;
     };
 
     Bitboard b, bb, squaresToQueen, unsafeSquares, blockedPassers, helpers;
@@ -873,11 +857,6 @@ namespace {
 
     // Scale by maximum promotion piece value
     Value maxMg = VALUE_ZERO, maxEg = VALUE_ZERO;
-    for (PieceType pt : pos.promotion_piece_types())
-    {
-        maxMg = std::max(maxMg, PieceValue[MG][pt]);
-        maxEg = std::max(maxEg, PieceValue[EG][pt]);
-    }
     score = make_score(mg_value(score) * int(maxMg - PawnValueMg) / (QueenValueMg - PawnValueMg),
                        eg_value(score) * int(maxEg - PawnValueEg) / (QueenValueEg - PawnValueEg));
 
@@ -943,59 +922,6 @@ namespace {
 
     Score score = SCORE_ZERO;
 
-    // Extinction
-    if (pos.extinction_value() != VALUE_NONE)
-    {
-        for (PieceType pt : pos.extinction_piece_types())
-            if (pt != ALL_PIECES)
-            {
-                // Single piece type extinction bonus
-                int denom = std::max(pos.count(Us, pt) - pos.extinction_piece_count(), 1);
-                if (pos.count(Them, pt) >= pos.extinction_opponent_piece_count())
-                    score += make_score(1000000 / (500 + PieceValue[MG][pt]),
-                                        1000000 / (500 + PieceValue[EG][pt])) / (denom * denom)
-                            * (pos.extinction_value() / VALUE_MATE);
-            }
-            else if (pos.extinction_value() == VALUE_MATE)
-            {
-                // Losing chess variant bonus
-                score += make_score(pos.non_pawn_material(Us), pos.non_pawn_material(Us)) / std::max(pos.count<ALL_PIECES>(Us), 1);
-            }
-            else if (pos.count<PAWN>(Us) == pos.count<ALL_PIECES>(Us))
-            {
-                // Pawns easy to stop/capture
-                int l = 0, m = 0, r = popcount(pos.pieces(Us, PAWN) & file_bb(FILE_A));
-                for (File f = FILE_A; f <= pos.max_file(); ++f)
-                {
-                    l = m; m = r; r = popcount(pos.pieces(Us, PAWN) & shift<EAST>(file_bb(f)));
-                    score -= make_score(80 - 10 * (edge_distance(f, pos.max_file()) % 2),
-                                        80 - 15 * (edge_distance(f, pos.max_file()) % 2)) * m / (1 + l * r);
-                }
-            }
-    }
-
-    // Connect-n
-    if (pos.connect_n() > 0)
-    {
-        for (Direction d : {NORTH, NORTH_EAST, EAST, SOUTH_EAST})
-        {
-            // Find sufficiently large gaps
-            Bitboard b = pos.board_bb() & ~pos.pieces(Them);
-            for (int i = 1; i < pos.connect_n(); i++)
-                b &= shift(d, b);
-            // Count number of pieces per gap
-            while (b)
-            {
-                Square s = pop_lsb(b);
-                int c = 0;
-                for (int j = 0; j < pos.connect_n(); j++)
-                    if (pos.pieces(Us) & (s - j * d))
-                        c++;
-                score += make_score(200, 200)  * c / (pos.connect_n() - c) / (pos.connect_n() - c);
-            }
-        }
-    }
-
     if (T)
         Trace::add(VARIANT, Us, score);
 
@@ -1013,8 +939,6 @@ namespace {
     // No initiative bonus for extinction variants
     int complexity = 0;
     bool pawnsOnBothFlanks = true;
-    if (pos.extinction_value() == VALUE_NONE && !pos.connect_n() && !pos.material_counting())
-    {
     int outflanking = !pos.count<KING>(WHITE) || !pos.count<KING>(BLACK) ? 0
                      :  distance<File>(pos.square<KING>(WHITE), pos.square<KING>(BLACK))
                     + int(rank_of(pos.square<KING>(WHITE)) - rank_of(pos.square<KING>(BLACK)));
@@ -1038,7 +962,6 @@ namespace {
                     + 51 * !pos.non_pawn_material()
                     - 43 * almostUnwinnable
                     -110 ;
-    }
 
     Value mg = mg_value(score);
     Value eg = eg_value(score);
@@ -1057,7 +980,7 @@ namespace {
     int sf = me->scale_factor(strongSide);
 
     // If scale factor is not already specific, scale up/down via general heuristics
-    if (sf == SCALE_FACTOR_NORMAL && !pos.material_counting())
+    if (sf == SCALE_FACTOR_NORMAL)
     {
         // For rook endgames with strong side not having overwhelming pawn number advantage
         // and its pawns being on one flank and weak side protecting its pieces with a king

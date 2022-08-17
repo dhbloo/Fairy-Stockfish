@@ -195,10 +195,6 @@ void init(const Variant* v) {
           strongestPiece = pt;
   }
 
-  Value maxPromotion = VALUE_ZERO;
-  for (PieceType pt : v->promotionPieceTypes)
-      maxPromotion = std::max(maxPromotion, PieceValue[EG][pt]);
-
   for (PieceType pt = PAWN; pt <= KING; ++pt)
   {
       Piece pc = make_piece(WHITE, pt);
@@ -222,16 +218,6 @@ void init(const Variant* v) {
           score = make_score(mg_value(score) * (lc * leaper + r1 * slider) / (lc * leaper + r0 * slider),
                              eg_value(score) * (lc * leaper + r1 * slider) / (lc * leaper + r0 * slider));
       }
-
-      // In variants such as horde where all pieces need to be captured, weak pieces such as pawns are more useful
-      if (   v->extinctionValue == -VALUE_MATE
-          && v->extinctionPieceCount == 0
-          && v->extinctionPieceTypes.find(ALL_PIECES) != v->extinctionPieceTypes.end())
-          score += make_score(0, std::max(KnightValueEg - PieceValue[EG][pt], VALUE_ZERO) / 20);
-
-      // For antichess variants, use negative piece values
-      if (v->extinctionValue == VALUE_MATE)
-          score = -make_score(mg_value(score) / 8, eg_value(score) / 8 / (1 + !pi->slider[MODALITY_CAPTURE].size()));
 
       // Override variant piece value
       if (v->pieceValue[MG][pt])
@@ -265,7 +251,6 @@ void init(const Variant* v) {
           psq[ pc][s] = score + (  pt == KING  ? KingBonus[std::clamp(Rank(r - pawnRank + 1), RANK_1, RANK_8)][std::min(f, FILE_D)] * 1
                                  : pt <= QUEEN ? Bonus[pc][std::min(r, RANK_8)][std::min(f, FILE_D)]
                                  : pt == HORSE ? Bonus[KNIGHT][std::min(r, RANK_8)][std::min(f, FILE_D)]
-                                 : pt == COMMONER && v->extinctionValue == -VALUE_MATE && v->extinctionPieceTypes.find(COMMONER) != v->extinctionPieceTypes.end() ? KingBonus[std::clamp(Rank(r - pawnRank + 1), RANK_1, RANK_8)][std::min(f, FILE_D)]
                                  : isSlider    ? make_score(5, 5) * (2 * f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile - 1)
                                  : isPawn      ? make_score(5, 5) * (2 * f - v->maxFile)
                                                : make_score(10, 10) * (1 + isSlowLeaper) * (f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile / 2));

@@ -119,7 +119,6 @@ public:
   const std::string& piece_to_char() const;
   const std::string& piece_to_char_synonyms() const;
   Rank promotion_rank() const;
-  const std::set<PieceType, std::greater<PieceType> >& promotion_piece_types() const;
   PieceType nnue_king() const;
   Square nnue_king_square(Color c) const;
   bool nnue_use_pockets() const;
@@ -134,17 +133,7 @@ public:
   int n_fold_rule() const;
   Value stalemate_value(int ply = 0) const;
   Value checkmate_value(int ply = 0) const;
-  Value extinction_value(int ply = 0) const;
-  bool extinction_claim() const;
-  const std::set<PieceType>& extinction_piece_types() const;
-  bool extinction_single_piece() const;
-  int extinction_piece_count() const;
-  int extinction_opponent_piece_count() const;
-  bool extinction_pseudo_royal() const;
-  bool flag_move() const;
-  int connect_n() const;
   CheckCount checks_remaining(Color c) const;
-  MaterialCounting material_counting() const;
 
   // Variant-specific properties
   int count_in_hand(PieceType pt) const;
@@ -338,11 +327,6 @@ inline Rank Position::promotion_rank() const {
   return RANK_8;
 }
 
-inline const std::set<PieceType, std::greater<PieceType> >& Position::promotion_piece_types() const {
-  assert(var != nullptr);
-  return var->promotionPieceTypes;
-}
-
 inline PieceType Position::nnue_king() const {
   assert(var != nullptr);
   return var->nnueKing;
@@ -420,92 +404,22 @@ inline Bitboard Position::promoted_soldiers(Color c) const {
 
 inline int Position::n_fold_rule() const {
   assert(var != nullptr);
-  return var->nFoldRule;
+  return 3;
 }
 
 inline Value Position::stalemate_value(int ply) const {
   assert(var != nullptr);
-  if (var->stalematePieceCount)
-  {
-      int c = count<ALL_PIECES>(sideToMove) - count<ALL_PIECES>(~sideToMove);
-      return c == 0 ? VALUE_DRAW : convert_mate_value(c < 0 ? var->stalemateValue : -var->stalemateValue, ply);
-  }
-  // Check for checkmate of pseudo-royal pieces
-  if (var->extinctionPseudoRoyal)
-  {
-      Bitboard pseudoRoyals = st->pseudoRoyals & pieces(sideToMove);
-      Bitboard pseudoRoyalsTheirs = st->pseudoRoyals & pieces(~sideToMove);
-      while (pseudoRoyals)
-      {
-          Square sr = pop_lsb(pseudoRoyals);
-          if (attackers_to(sr, ~sideToMove))
-              return convert_mate_value(var->checkmateValue, ply);
-      }
-  }
-  return convert_mate_value(var->stalemateValue, ply);
+  return convert_mate_value(-VALUE_MATE, ply);
 }
 
 inline Value Position::checkmate_value(int ply) const {
   assert(var != nullptr);
   // Return mate value
-  return convert_mate_value(var->checkmateValue, ply);
-}
-
-inline Value Position::extinction_value(int ply) const {
-  assert(var != nullptr);
-  return convert_mate_value(var->extinctionValue, ply);
-}
-
-inline bool Position::extinction_claim() const {
-  assert(var != nullptr);
-  return var->extinctionClaim;
-}
-
-inline const std::set<PieceType>& Position::extinction_piece_types() const {
-  assert(var != nullptr);
-  return var->extinctionPieceTypes;
-}
-
-inline bool Position::extinction_single_piece() const {
-  assert(var != nullptr);
-  return   var->extinctionValue == -VALUE_MATE
-        && std::any_of(var->extinctionPieceTypes.begin(),
-                       var->extinctionPieceTypes.end(),
-                       [](PieceType pt) { return pt != ALL_PIECES; });
-}
-
-inline int Position::extinction_piece_count() const {
-  assert(var != nullptr);
-  return var->extinctionPieceCount;
-}
-
-inline int Position::extinction_opponent_piece_count() const {
-  assert(var != nullptr);
-  return var->extinctionOpponentPieceCount;
-}
-
-inline bool Position::extinction_pseudo_royal() const {
-  assert(var != nullptr);
-  return var->extinctionPseudoRoyal;
-}
-
-inline bool Position::flag_move() const {
-  assert(var != nullptr);
-  return var->flagMove;
-}
-
-inline int Position::connect_n() const {
-  assert(var != nullptr);
-  return var->connectN;
+  return convert_mate_value(-VALUE_MATE, ply);
 }
 
 inline CheckCount Position::checks_remaining(Color c) const {
   return st->checksRemaining[c];
-}
-
-inline MaterialCounting Position::material_counting() const {
-  assert(var != nullptr);
-  return var->materialCounting;
 }
 
 inline bool Position::is_immediate_game_end() const {
@@ -809,24 +723,7 @@ inline bool Position::allow_virtual_drop(Color c, PieceType pt) const {
 inline Value Position::material_counting_result() const {
   auto weigth_count = [this](PieceType pt, int v){ return v * (count(WHITE, pt) - count(BLACK, pt)); };
   int materialCount;
-  Value result;
-  switch (var->materialCounting)
-  {
-  case UNWEIGHTED_MATERIAL:
-      result =  count(WHITE, ALL_PIECES) > count(BLACK, ALL_PIECES) ?  VALUE_MATE
-              : count(WHITE, ALL_PIECES) < count(BLACK, ALL_PIECES) ? -VALUE_MATE
-                                                                    :  VALUE_DRAW;
-      break;
-  case WHITE_DRAW_ODDS:
-      result = VALUE_MATE;
-      break;
-  case BLACK_DRAW_ODDS:
-      result = -VALUE_MATE;
-      break;
-  default:
-      assert(false);
-      result = VALUE_DRAW;
-  }
+  Value result = VALUE_DRAW;
   return sideToMove == WHITE ? result : -result;
 }
 

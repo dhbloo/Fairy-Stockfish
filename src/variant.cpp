@@ -49,8 +49,6 @@ namespace {
         v->mobilityRegion[BLACK][FERS] = v->mobilityRegion[BLACK][KING];
         v->mobilityRegion[WHITE][ELEPHANT] = Rank1BB | Rank2BB | Rank3BB | Rank4BB | Rank5BB;
         v->mobilityRegion[BLACK][ELEPHANT] = Rank6BB | Rank7BB | Rank8BB | Rank9BB | Rank10BB;
-        v->promotionPieceTypes = {};
-        v->stalemateValue = -VALUE_MATE;
         return v;
     }
 

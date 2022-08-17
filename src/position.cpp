@@ -905,13 +905,6 @@ namespace Stockfish {
             Bitboard attackers = attackers_to(to, pieces() ^ fromto, ~us);
             Value minAttacker = VALUE_INFINITE;
 
-            while (attackers)
-            {
-                Square s = pop_lsb(attackers);
-                if (extinction_piece_types().find(type_of(piece_on(s))) == extinction_piece_types().end())
-                    minAttacker = std::min(minAttacker, blast & s ? VALUE_ZERO : CapturePieceValue[MG][piece_on(s)]);
-            }
-
             if (minAttacker == VALUE_INFINITE)
                 return VALUE_ZERO;
 
@@ -922,10 +915,6 @@ namespace Stockfish {
         while (blast)
         {
             Piece bpc = piece_on(pop_lsb(blast));
-            if (extinction_piece_types().find(type_of(bpc)) != extinction_piece_types().end())
-                return color_of(bpc) == us ? extinction_value()
-                : capture(m) ? -extinction_value()
-                : VALUE_ZERO;
             result += color_of(bpc) == us ? -CapturePieceValue[MG][bpc] : CapturePieceValue[MG][bpc];
         }
 
@@ -942,15 +931,6 @@ namespace Stockfish {
         assert(is_ok(m));
 
         Square from = from_sq(m), to = to_sq(m);
-
-        // Extinction
-        if (extinction_value() != VALUE_NONE
-            && piece_on(to)
-            && ((extinction_piece_types().find(type_of(piece_on(to))) != extinction_piece_types().end()
-                && pieceCount[piece_on(to)] == extinction_piece_count() + 1)
-                || (extinction_piece_types().find(ALL_PIECES) != extinction_piece_types().end()
-                    && count<ALL_PIECES>(~sideToMove) == extinction_piece_count() + 1)))
-            return extinction_value() < VALUE_ZERO;
 
         int swap = PieceValue[MG][piece_on(to)] - threshold;
         if (swap < 0)
@@ -1086,12 +1066,11 @@ namespace Stockfish {
                     // Return a draw score if a position repeats once earlier but strictly
                     // after the root, or repeats twice before or at the root.
                     if (stp->key == st->key
-                        && ++cnt + 1 == (ply > i && !var->moveRepetitionIllegal ? 2 : n_fold_rule()))
+                        && ++cnt + 1 == (ply > i ? 2 : n_fold_rule()))
                     {
                         result = convert_mate_value((perpetualThem || perpetualUs) ? (!perpetualUs ? VALUE_MATE : !perpetualThem ? -VALUE_MATE : VALUE_DRAW)
                             : (chaseThem || chaseUs) ? (!chaseUs ? VALUE_MATE : !chaseThem ? -VALUE_MATE : VALUE_DRAW)
-                            : var->nFoldValueAbsolute && sideToMove == BLACK ? -var->nFoldValue
-                            : var->nFoldValue, ply);
+                            : VALUE_DRAW, ply);
                         return true;
                     }
 
@@ -1112,37 +1091,6 @@ namespace Stockfish {
     /// It does not not detect stalemates.
 
     bool Position::is_immediate_game_end(Value& result, int ply) const {
-
-        // Extinction
-        // Extinction does not apply for pseudo-royal pieces, because they can not be captured
-        if (extinction_value() != VALUE_NONE)
-        {
-            for (Color c : { ~sideToMove, sideToMove })
-                for (PieceType pt : extinction_piece_types())
-                    if (count_with_hand(c, pt) <= var->extinctionPieceCount
-                        && count_with_hand(~c, pt) >= var->extinctionOpponentPieceCount + (extinction_claim() && c == sideToMove))
-                    {
-                        result = c == sideToMove ? extinction_value(ply) : -extinction_value(ply);
-                        return true;
-                    }
-        }
-        // Connect-n
-        if (connect_n() > 0)
-        {
-            Bitboard b;
-            for (Direction d : {NORTH, NORTH_EAST, EAST, SOUTH_EAST})
-            {
-                b = pieces(~sideToMove);
-                for (int i = 1; i < connect_n() && b; i++)
-                    b &= shift(d, b);
-                if (b)
-                {
-                    result = mated_in(ply);
-                    return true;
-                }
-            }
-        }
-
         return false;
     }
 
