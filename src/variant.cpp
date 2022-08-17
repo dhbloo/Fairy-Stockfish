@@ -51,7 +51,6 @@ namespace {
         v->mobilityRegion[BLACK][ELEPHANT] = Rank6BB | Rank7BB | Rank8BB | Rank9BB | Rank10BB;
         v->kingType = WAZIR;
         v->promotionPieceTypes = {};
-        v->doubleStep = false;
         v->stalemateValue = -VALUE_MATE;
         v->soldierPromotionRank = RANK_6;
         return v;

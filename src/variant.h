@@ -37,11 +37,8 @@ namespace Stockfish {
 struct Variant {
   std::string variantTemplate = "fairy";
   std::string pieceToCharTable = "-";
-  int pocketSize = 0;
   Rank maxRank = RANK_10;
   File maxFile = FILE_I;
-  bool chess960 = false;
-  bool twoBoards = false;
   int pieceValue[PHASE_NB][PIECE_TYPE_NB] = {};
   std::string customPiece[CUSTOM_PIECES_NB] = {};
   std::set<PieceType> pieceTypes = { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
@@ -55,44 +52,16 @@ struct Variant {
   std::set<PieceType, std::greater<PieceType> > promotionPieceTypes = { QUEEN, ROOK, BISHOP, KNIGHT };
   int promotionLimit[PIECE_TYPE_NB] = {}; // 0 means unlimited
   PieceType promotedPieceType[PIECE_TYPE_NB] = {};
-  bool piecePromotionOnCapture = false;
-  bool mandatoryPawnPromotion = true;
-  bool mandatoryPiecePromotion = false;
-  bool pieceDemotion = false;
-  bool doubleStep = true;
   Rank doubleStepRank = RANK_2;
   Rank doubleStepRankMin = RANK_2;
-  Bitboard enPassantRegion = AllSquares;
   PieceType kingType = KING;
-  bool checking = true;
-  bool dropChecks = true;
-  bool mustDrop = false;
   PieceType mustDropType = ALL_PIECES;
-  bool pieceDrops = false;
-  bool dropLoop = false;
-  bool capturesToHand = false;
-  bool firstRankPawnDrops = false;
-  bool promotionZonePawnDrops = false;
-  bool dropOnTop = false;
   EnclosingRule enclosingDrop = NO_ENCLOSING;
   Bitboard enclosingDropStart = 0;
   Bitboard whiteDropRegion = AllSquares;
   Bitboard blackDropRegion = AllSquares;
-  bool sittuyinRookDrop = false;
-  bool dropOppositeColoredBishop = false;
-  bool dropPromoted = false;
-  PieceType dropNoDoubled = NO_PIECE_TYPE;
-  int dropNoDoubledCount = 1;
-  bool immobilityIllegal = false;
-  bool gating = false;
-  bool arrowGating = false;
-  bool cambodianMoves = false;
   Bitboard diagonalLines = 0;
-  bool pass = false;
-  bool passOnStalemate = false;
   Rank soldierPromotionRank = RANK_6;
-  EnclosingRule flipEnclosedPieces = NO_ENCLOSING;
-  bool freeDrops = false;
 
   // game end
   int nFoldRule = 3;

@@ -487,12 +487,6 @@ namespace {
                 score += make_score(PieceValue[MG][pos.promoted_piece_type(Pt)] - PieceValue[MG][Pt],
                                     PieceValue[EG][pos.promoted_piece_type(Pt)] - PieceValue[EG][Pt]) / (zone & s && b ? 6 : 12);
         }
-        else if (pos.piece_demotion() && pos.unpromoted_piece_on(s))
-            score -= make_score(PieceValue[MG][Pt] - PieceValue[MG][pos.unpromoted_piece_on(s)],
-                                PieceValue[EG][Pt] - PieceValue[EG][pos.unpromoted_piece_on(s)]) / 4;
-        else if (pos.captures_to_hand() && pos.unpromoted_piece_on(s))
-            score += make_score(PieceValue[MG][Pt] - PieceValue[MG][pos.unpromoted_piece_on(s)],
-                                PieceValue[EG][Pt] - PieceValue[EG][pos.unpromoted_piece_on(s)]) / 8;
 
         else if (pos.count<KING>(Us) && (Pt == FERS || Pt == SILVER))
             score -= EndgameKingProximity * (distance(s, pos.square<KING>(Us)) - 2);
@@ -598,18 +592,9 @@ namespace {
         Bitboard theirHalf = pos.board_bb() & ~forward_ranks_bb(Them, relative_rank(Them, Rank((pos.max_rank() - 1) / 2), pos.max_rank()));
         mobility[Us] += DropMobility * popcount(b & theirHalf & ~attackedBy[Them][ALL_PIECES]);
 
-        // Bonus for Kyoto shogi style drops of promoted pieces
-        if (pos.promoted_piece_type(pt) != NO_PIECE_TYPE && pos.drop_promoted())
-            score += make_score(std::max(PieceValue[MG][pos.promoted_piece_type(pt)] - PieceValue[MG][pt], VALUE_ZERO),
-                                std::max(PieceValue[EG][pos.promoted_piece_type(pt)] - PieceValue[EG][pt], VALUE_ZERO)) / 4 * pos.count_in_hand(Us, pt);
-
         // Mobility bonus for reversi variants
         if (pos.enclosing_drop())
             mobility[Us] += make_score(500, 500) * popcount(b);
-
-        // Redundant pieces that can not be doubled per file (e.g., shogi pawns)
-        if (pt == pos.drop_no_doubled())
-            score -= make_score(50, 20) * std::max(pos.count_with_hand(Us, pt) - pos.max_file() - 1, 0);
     }
 
     return score;
@@ -624,7 +609,7 @@ namespace {
     Rank r = relative_rank(Us, std::min(Rank((pos.max_rank() - 1) / 2 + 1), pos.max_rank()), pos.max_rank());
     Bitboard Camp = pos.board_bb() & ~forward_ranks_bb(Us, r);
 
-    if (!pos.count<KING>(Us) || !pos.checking_permitted() || pos.checkmate_value() != -VALUE_MATE)
+    if (!pos.count<KING>(Us) || pos.checkmate_value() != -VALUE_MATE)
         return SCORE_ZERO;
 
     Bitboard weak, b1, b2, b3, safe, unsafeChecks = 0;
@@ -648,7 +633,7 @@ namespace {
     b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
 
     std::function <Bitboard (Color, PieceType)> get_attacks = [this](Color c, PieceType pt) {
-        return attackedBy[c][pt] | (pos.piece_drops() && pos.count_in_hand(c, pt) > 0 ? pos.drop_region(c, pt) & ~pos.pieces() : Bitboard(0));
+        return attackedBy[c][pt];
     };
     for (PieceType pt : pos.piece_types())
     {
@@ -687,13 +672,13 @@ namespace {
     kingDanger +=        kingAttackersCount[Them] * kingAttackersWeight[Them]
                  +       kingAttackersCountInHand[Them] * kingAttackersWeight[Them]
                  +       kingAttackersCount[Them] * kingAttackersWeightInHand[Them]
-                 + 183 * popcount(kingRing[Us] & (weak | ~pos.board_bb(Us, KING))) * (1 + pos.captures_to_hand())
+                 + 183 * popcount(kingRing[Us] & (weak | ~pos.board_bb(Us, KING)))
                  + 148 * popcount(unsafeChecks) * 1
                  +  98 * popcount(pos.blockers_for_king(Us))
-                 +  69 * kingAttacksCount[Them] * (2 + pos.captures_to_hand()) / 2
+                 +  69 * kingAttacksCount[Them]
                  +   3 * kingFlankAttack * kingFlankAttack / 8
-                 +       mg_value(mobility[Them] - mobility[Us]) * int(!pos.captures_to_hand())
-                 - 873 * !(pos.major_pieces(Them) || pos.captures_to_hand())
+                 +       mg_value(mobility[Them] - mobility[Us])
+                 - 873 * !pos.major_pieces(Them)
                        * 2 / (2 + (pos.king_type() != KING) * (pos.diagonal_lines() ? 1 : 2))
                  - 100 * bool(attackedBy[Us][KNIGHT] & attackedBy[Us][KING])
                  -   6 * mg_value(score) / 8
@@ -709,7 +694,7 @@ namespace {
         score -= PawnlessFlank;
 
     // Penalty if king flank is under attack, potentially moving toward the king
-    score -= FlankAttacks * kingFlankAttack * (1 + 5 * pos.captures_to_hand());
+    score -= FlankAttacks * kingFlankAttack;
 
     score += make_score(0, mg_value(score) / 2);
 
@@ -944,10 +929,6 @@ namespace {
 
     bool pawnsOnly = !(pos.pieces(Us) ^ pos.pieces(Us, PAWN));
 
-    // Early exit if, for example, both queens or 6 minor pieces have been exchanged
-    if (pos.non_pawn_material() < SpaceThreshold && !pawnsOnly && pos.double_step_enabled())
-        return SCORE_ZERO;
-
     constexpr Color Them     = ~Us;
     constexpr Direction Down = -pawn_push(Us);
     constexpr Bitboard SpaceMask =
@@ -1044,42 +1025,6 @@ namespace {
                 score += make_score(200, 200)  * c / (pos.connect_n() - c) / (pos.connect_n() - c);
             }
         }
-    }
-
-    // Potential piece flips (Reversi)
-    if (pos.flip_enclosed_pieces())
-    {
-        // Stable pieces
-        if (pos.flip_enclosed_pieces() == REVERSI)
-        {
-            Bitboard edges = (FileABB | file_bb(pos.max_file()) | Rank1BB | rank_bb(pos.max_rank())) & pos.board_bb();
-            Bitboard edgePieces = pos.pieces(Us) & edges;
-            while (edgePieces)
-            {
-                Bitboard connectedEdge = attacks_bb(Us, ROOK, pop_lsb(edgePieces), ~(pos.pieces(Us) & edges)) & edges;
-                if (!more_than_one(connectedEdge & ~pos.pieces(Us)))
-                    score += make_score(300, 300);
-                else if (!(connectedEdge & ~pos.pieces()))
-                    score += make_score(200, 200);
-            }
-        }
-
-        // Unstable
-        Bitboard unstable = 0;
-        Bitboard drops = pos.drop_region(Them, IMMOBILE_PIECE);
-        while (drops)
-        {
-            Square s = pop_lsb(drops);
-            if (pos.flip_enclosed_pieces() == REVERSI)
-            {
-                Bitboard b = attacks_bb(Them, QUEEN, s, ~pos.pieces(Us)) & ~PseudoAttacks[Them][KING][s] & pos.pieces(Them);
-                while(b)
-                    unstable |= between_bb(s, pop_lsb(b));
-            }
-            else
-                unstable |= PseudoAttacks[Them][KING][s] & pos.pieces(Us);
-        }
-        score -= make_score(200, 200) * popcount(unstable);
     }
 
     if (T)

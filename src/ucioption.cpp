@@ -79,7 +79,7 @@ void on_variant_change(const Option &o) {
     // Do not send setup command for known variants
     if (standard_variants.find(o) != standard_variants.end())
         return;
-    int pocketsize = v->pieceDrops ? (v->pocketSize ? v->pocketSize : v->pieceTypes.size()) : 0;
+    int pocketsize = 0;
     sync_cout << "info string variant " << (std::string)o
             << " files " << v->maxFile + 1
             << " ranks " << v->maxRank + 1

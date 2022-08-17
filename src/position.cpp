@@ -742,45 +742,6 @@ namespace Stockfish {
         }
         k ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
 
-        // Flip enclosed pieces
-        st->flippedPieces = 0;
-        if (flip_enclosed_pieces())
-        {
-            // Find end of rows to be flipped
-            if (flip_enclosed_pieces() == REVERSI)
-            {
-                Bitboard b = attacks_bb(us, QUEEN, to, board_bb() & ~pieces(~us)) & ~PseudoAttacks[us][KING][to] & pieces(us);
-                while (b)
-                    st->flippedPieces |= between_bb(pop_lsb(b), to) ^ to;
-            }
-            else
-            {
-                assert(flip_enclosed_pieces() == ATAXX);
-                st->flippedPieces = PseudoAttacks[us][KING][to] & pieces(~us);
-            }
-
-            // Flip pieces
-            Bitboard to_flip = st->flippedPieces;
-            while (to_flip)
-            {
-                Square s = pop_lsb(to_flip);
-                Piece flipped = piece_on(s);
-                Piece resulting = ~flipped;
-
-                // remove opponent's piece
-                remove_piece(s);
-                k ^= Zobrist::psq[flipped][s];
-                st->materialKey ^= Zobrist::psq[flipped][pieceCount[flipped]];
-                st->nonPawnMaterial[them] -= PieceValue[MG][flipped];
-
-                // add our piece
-                put_piece(resulting, s);
-                k ^= Zobrist::psq[resulting][s];
-                st->materialKey ^= Zobrist::psq[resulting][pieceCount[resulting] - 1];
-                st->nonPawnMaterial[us] += PieceValue[MG][resulting];
-            }
-        }
-
         // Move the piece.
         if (Eval::useNNUE)
         {
@@ -851,19 +812,6 @@ namespace Stockfish {
             Square capsq = to;
 
             put_piece(st->capturedPiece, capsq, st->capturedpromoted, st->unpromotedCapturedPiece); // Restore the captured piece
-        }
-
-        if (flip_enclosed_pieces())
-        {
-            // Flip pieces
-            Bitboard to_flip = st->flippedPieces;
-            while (to_flip)
-            {
-                Square s = pop_lsb(to_flip);
-                Piece resulting = ~piece_on(s);
-                remove_piece(s);
-                put_piece(resulting, s);
-            }
         }
 
         // Finally point our state pointer back to the previous state

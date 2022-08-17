@@ -35,20 +35,12 @@ namespace {
   ExtMove* generate_drops(const Position& pos, ExtMove* moveList, PieceType pt, Bitboard b) {
     assert(Type != CAPTURES);
     // Do not generate virtual drops for perft and at root
-    if (pos.can_drop(Us, pt) || (Type != NON_EVASIONS && pos.two_boards() && pos.allow_virtual_drop(Us, pt)))
+    if (pos.can_drop(Us, pt))
     {
         // Restrict to valid target
         b &= pos.drop_region(Us, pt);
 
         // Add to move list
-        if (pos.drop_promoted() && pos.promoted_piece_type(pt))
-        {
-            Bitboard b2 = b;
-            if (Type == QUIET_CHECKS)
-                b2 &= pos.check_squares(pos.promoted_piece_type(pt));
-            while (b2)
-                *moveList++ = make_drop(pop_lsb(b2), pt, pos.promoted_piece_type(pt));
-        }
         if (Type == QUIET_CHECKS || !pos.can_drop(Us, pt))
             b &= pos.check_squares(pt);
         while (b)
@@ -75,7 +67,7 @@ namespace {
     const Bitboard enemies      = Type == EVASIONS ? (pos.checkers() & pos.non_sliding_riders() ? pos.pieces(Them) : pos.checkers())
                                 : Type == CAPTURES ? target : pos.pieces(Them);
 
-    Bitboard pawnsNotOn7 = pos.pieces(Us, PAWN) & (pos.mandatory_pawn_promotion() ? ~TRank7BB : AllSquares);
+    Bitboard pawnsNotOn7 = pos.pieces(Us, PAWN) & (~TRank7BB);
 
     // Single and double pawn pushes, no promotions
     if (Type != CAPTURES)
@@ -140,25 +132,15 @@ namespace {
                        | (pos.moves_from(Us, Pt, from) & ~pos.pieces())) & target;
         PieceType promPt = pos.promoted_piece_type(Pt);
         Bitboard b2 = promPt && (!pos.promotion_limit(promPt) || pos.promotion_limit(promPt) > pos.count(Us, promPt)) ? b1 : Bitboard(0);
-        Bitboard b3 = pos.piece_demotion() && pos.is_promoted(from) ? b1 : Bitboard(0);
 
         // Restrict target squares considering promotion zone
-        if (b2 | b3)
+        if (b2)
         {
             Bitboard promotion_zone = zone_bb(Us, pos.promotion_rank(), pos.max_rank());
-            if (pos.mandatory_piece_promotion())
-                b1 &= (promotion_zone & from ? Bitboard(0) : ~promotion_zone) | (pos.piece_promotion_on_capture() ? ~pos.pieces() : Bitboard(0));
-            // Exclude quiet promotions/demotions
-            if (pos.piece_promotion_on_capture())
-            {
-                b2 &= pos.pieces();
-                b3 &= pos.pieces();
-            }
             // Consider promotions/demotions into promotion zone
             if (!(promotion_zone & from))
             {
                 b2 &= promotion_zone;
-                b3 &= promotion_zone;
             }
         }
 
@@ -167,8 +149,6 @@ namespace {
             b1 &= pos.check_squares(Pt);
             if (b2)
                 b2 &= pos.check_squares(pos.promoted_piece_type(Pt));
-            if (b3)
-                b3 &= pos.check_squares(type_of(pos.unpromoted_piece_on(from)));
         }
 
         while (b1)
@@ -212,10 +192,6 @@ namespace {
         for (PieceType pt : pos.piece_types())
             if (pt != KING)
                 moveList = generate_moves<Us, Checks>(pos, moveList, pt, target);
-        // generate drops
-        if (pos.piece_drops() && Type != CAPTURES && (pos.can_drop(Us, ALL_PIECES)))
-            for (PieceType pt : pos.piece_types())
-                moveList = generate_drops<Us, Type>(pos, moveList, pt, target & ~pos.pieces(~Us));
     }
 
     // King moves

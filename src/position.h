@@ -66,7 +66,6 @@ struct StateInfo {
   Bitboard   checkSquares[PIECE_TYPE_NB];
   Piece      capturedPiece;
   Bitboard   nonSlidingRiders;
-  Bitboard   flippedPieces;
   Bitboard   pseudoRoyals;
   OptBool    legalCapture;
   bool       capturedpromoted;
@@ -114,7 +113,6 @@ public:
   File max_file() const;
   int ranks() const;
   int files() const;
-  bool two_boards() const;
   Bitboard board_bb() const;
   Bitboard board_bb(Color c, PieceType pt) const;
   const std::set<PieceType>& piece_types() const;
@@ -125,10 +123,7 @@ public:
   int promotion_limit(PieceType pt) const;
   PieceType promoted_piece_type(PieceType pt) const;
   bool piece_promotion_on_capture() const;
-  bool mandatory_pawn_promotion() const;
   bool mandatory_piece_promotion() const;
-  bool piece_demotion() const;
-  bool double_step_enabled() const;
   Rank double_step_rank_max() const;
   Rank double_step_rank_min() const;
   PieceType king_type() const;
@@ -136,32 +131,13 @@ public:
   Square nnue_king_square(Color c) const;
   bool nnue_use_pockets() const;
   bool nnue_applicable() const;
-  bool checking_permitted() const;
-  bool drop_checks() const;
   bool has_capture() const;
-  bool must_drop() const;
-  bool piece_drops() const;
-  bool drop_loop() const;
-  bool captures_to_hand() const;
-  bool first_rank_pawn_drops() const;
-  bool drop_on_top() const;
   bool can_drop(Color c, PieceType pt) const;
   EnclosingRule enclosing_drop() const;
   Bitboard drop_region(Color c) const;
   Bitboard drop_region(Color c, PieceType pt) const;
-  bool sittuyin_rook_drop() const;
-  bool drop_opposite_colored_bishop() const;
-  bool drop_promoted() const;
-  PieceType drop_no_doubled() const;
-  bool immobility_illegal() const;
-  bool gating() const;
-  bool arrow_gating() const;
-  bool cambodian_moves() const;
   Bitboard diagonal_lines() const;
-  bool pass() const;
-  bool pass_on_stalemate() const;
   Bitboard promoted_soldiers(Color c) const;
-  EnclosingRule flip_enclosed_pieces() const;
   // winning conditions
   int n_fold_rule() const;
   Value stalemate_value(int ply = 0) const;
@@ -340,11 +316,6 @@ inline int Position::files() const {
   return var->maxFile + 1;
 }
 
-inline bool Position::two_boards() const {
-  assert(var != nullptr);
-  return var->twoBoards;
-}
-
 inline Bitboard Position::board_bb() const {
   assert(var != nullptr);
   return board_size_bb(var->maxFile, var->maxRank);
@@ -390,31 +361,6 @@ inline PieceType Position::promoted_piece_type(PieceType pt) const {
   return var->promotedPieceType[pt];
 }
 
-inline bool Position::piece_promotion_on_capture() const {
-  assert(var != nullptr);
-  return var->piecePromotionOnCapture;
-}
-
-inline bool Position::mandatory_pawn_promotion() const {
-  assert(var != nullptr);
-  return var->mandatoryPawnPromotion;
-}
-
-inline bool Position::mandatory_piece_promotion() const {
-  assert(var != nullptr);
-  return var->mandatoryPiecePromotion;
-}
-
-inline bool Position::piece_demotion() const {
-  assert(var != nullptr);
-  return var->pieceDemotion;
-}
-
-inline bool Position::double_step_enabled() const {
-  assert(var != nullptr);
-  return var->doubleStep;
-}
-
 inline Rank Position::double_step_rank_max() const {
   assert(var != nullptr);
   return var->doubleStepRank;
@@ -446,17 +392,7 @@ inline bool Position::nnue_use_pockets() const {
 
 inline bool Position::nnue_applicable() const {
   // Do not use NNUE during setup phases (placement, sittuyin)
-  return (!count_in_hand(ALL_PIECES) || nnue_use_pockets() || !must_drop()) && !virtualPieces;
-}
-
-inline bool Position::checking_permitted() const {
-  assert(var != nullptr);
-  return var->checking;
-}
-
-inline bool Position::drop_checks() const {
-  assert(var != nullptr);
-  return var->dropChecks;
+  return (!count_in_hand(ALL_PIECES) || nnue_use_pockets()) && !virtualPieces;
 }
 
 inline bool Position::has_capture() const {
@@ -485,36 +421,6 @@ inline bool Position::has_capture() const {
   return false;
 }
 
-inline bool Position::must_drop() const {
-  assert(var != nullptr);
-  return var->mustDrop;
-}
-
-inline bool Position::piece_drops() const {
-  assert(var != nullptr);
-  return var->pieceDrops;
-}
-
-inline bool Position::drop_loop() const {
-  assert(var != nullptr);
-  return var->dropLoop;
-}
-
-inline bool Position::captures_to_hand() const {
-  assert(var != nullptr);
-  return var->capturesToHand;
-}
-
-inline bool Position::first_rank_pawn_drops() const {
-  assert(var != nullptr);
-  return var->firstRankPawnDrops;
-}
-
-inline bool Position::drop_on_top() const {
-  assert(var != nullptr);
-  return var->dropOnTop;
-}
-
 inline EnclosingRule Position::enclosing_drop() const {
   assert(var != nullptr);
   return var->enclosingDrop;
@@ -528,25 +434,12 @@ inline Bitboard Position::drop_region(Color c) const {
 inline Bitboard Position::drop_region(Color c, PieceType pt) const {
   Bitboard b = drop_region(c) & board_bb(c, pt);
 
-  // Connect4-style drops
-  if (drop_on_top())
-      b &= shift<NORTH>(pieces()) | Rank1BB;
   // Pawns on back ranks
   if (pt == PAWN)
   {
-      if (!var->promotionZonePawnDrops)
-          b &= ~zone_bb(c, promotion_rank(), max_rank());
-      if (!first_rank_pawn_drops())
-          b &= ~rank_bb(relative_rank(c, RANK_1, max_rank()));
+      b &= ~zone_bb(c, promotion_rank(), max_rank());
+      b &= ~rank_bb(relative_rank(c, RANK_1, max_rank()));
   }
-  // Doubled shogi pawns
-  if (pt == drop_no_doubled())
-      for (File f = FILE_A; f <= max_file(); ++f)
-          if (popcount(file_bb(f) & pieces(c, pt)) >= var->dropNoDoubledCount)
-              b &= ~file_bb(f);
-  // Sittuyin rook drops
-  if (pt == ROOK && sittuyin_rook_drop())
-      b &= rank_bb(relative_rank(c, RANK_1, max_rank()));
 
   // Filter out squares where the drop does not enclose at least one opponent's piece
   if (enclosing_drop())
@@ -586,59 +479,10 @@ inline Bitboard Position::drop_region(Color c, PieceType pt) const {
   return b;
 }
 
-inline bool Position::sittuyin_rook_drop() const {
-  assert(var != nullptr);
-  return var->sittuyinRookDrop;
-}
-
-inline bool Position::drop_opposite_colored_bishop() const {
-  assert(var != nullptr);
-  return var->dropOppositeColoredBishop;
-}
-
-inline bool Position::drop_promoted() const {
-  assert(var != nullptr);
-  return var->dropPromoted;
-}
-
-inline PieceType Position::drop_no_doubled() const {
-  assert(var != nullptr);
-  return var->dropNoDoubled;
-}
-
-inline bool Position::immobility_illegal() const {
-  assert(var != nullptr);
-  return var->immobilityIllegal;
-}
-
-inline bool Position::gating() const {
-  assert(var != nullptr);
-  return var->gating;
-}
-
-inline bool Position::arrow_gating() const {
-  assert(var != nullptr);
-  return var->arrowGating;
-}
-
-inline bool Position::cambodian_moves() const {
-  assert(var != nullptr);
-  return var->cambodianMoves;
-}
 
 inline Bitboard Position::diagonal_lines() const {
   assert(var != nullptr);
   return var->diagonalLines;
-}
-
-inline bool Position::pass() const {
-  assert(var != nullptr);
-  return var->pass || var->passOnStalemate;
-}
-
-inline bool Position::pass_on_stalemate() const {
-  assert(var != nullptr);
-  return var->passOnStalemate;
 }
 
 inline Bitboard Position::promoted_soldiers(Color c) const {
@@ -649,11 +493,6 @@ inline Bitboard Position::promoted_soldiers(Color c) const {
 inline int Position::n_fold_rule() const {
   assert(var != nullptr);
   return var->nFoldRule;
-}
-
-inline EnclosingRule Position::flip_enclosed_pieces() const {
-  assert(var != nullptr);
-  return var->flipEnclosedPieces;
 }
 
 inline Value Position::stalemate_value(int ply) const {
@@ -1031,7 +870,6 @@ inline int Position::count_with_hand(Color c, PieceType pt) const {
 }
 
 inline bool Position::allow_virtual_drop(Color c, PieceType pt) const {
-  assert(two_boards());
   // Do we allow a virtual drop?
   return pt != KING && (   count_in_hand(c, PAWN) >= -(pt == PAWN)
                         && count_in_hand(c, KNIGHT) >= -(pt == PAWN)
@@ -1065,14 +903,12 @@ inline Value Position::material_counting_result() const {
 }
 
 inline void Position::add_to_hand(Piece pc) {
-  if (variant()->freeDrops) return;
   pieceCountInHand[color_of(pc)][type_of(pc)]++;
   pieceCountInHand[color_of(pc)][ALL_PIECES]++;
   psq += PSQT::psq[pc][SQ_NONE];
 }
 
 inline void Position::remove_from_hand(Piece pc) {
-  if (variant()->freeDrops) return;
   pieceCountInHand[color_of(pc)][type_of(pc)]--;
   pieceCountInHand[color_of(pc)][ALL_PIECES]--;
   psq -= PSQT::psq[pc][SQ_NONE];
@@ -1094,7 +930,7 @@ inline void Position::undrop_piece(Piece pc_hand, Square s) {
 }
 
 inline bool Position::can_drop(Color c, PieceType pt) const {
-  return variant()->freeDrops || count_in_hand(c, pt) > 0;
+  return count_in_hand(c, pt) > 0;
 }
 
 } // namespace Stockfish

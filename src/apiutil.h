@@ -469,15 +469,6 @@ inline Validation fill_char_board(CharBoard& board, const std::string& fenBoard,
         prevChar = c;
     }
 
-    if (v->pieceDrops)
-    { // pockets can either be defined by [] or /
-        if (rankIdx+1 != board.get_nb_ranks() && rankIdx != board.get_nb_ranks())
-        {
-            std::cerr << "Invalid number of ranks. Expected: " << board.get_nb_ranks() << " Actual: " << rankIdx+1 << std::endl;
-            return NOK;
-        }
-    }
-    else
     {
         if (rankIdx+1 != board.get_nb_ranks())
         {

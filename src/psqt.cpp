@@ -223,11 +223,6 @@ void init(const Variant* v) {
                              eg_value(score) * (lc * leaper + r1 * slider) / (lc * leaper + r0 * slider));
       }
 
-      // In variants where checks are prohibited, strong pieces are less mobile, so limit their value 
-      if (!v->checking)
-          score = make_score(std::min(mg_value(score), Value(1800)) / 2,
-                             std::min(eg_value(score), Value(1800)) * 3 / 5);
-
       // In variants such as horde where all pieces need to be captured, weak pieces such as pawns are more useful
       if (   v->extinctionValue == -VALUE_MATE
           && v->extinctionPieceCount == 0
