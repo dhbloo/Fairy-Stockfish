@@ -219,12 +219,6 @@ void init(const Variant* v) {
                              eg_value(score) * (lc * leaper + r1 * slider) / (lc * leaper + r0 * slider));
       }
 
-      // Override variant piece value
-      if (v->pieceValue[MG][pt])
-          score = make_score(v->pieceValue[MG][pt], eg_value(score));
-      if (v->pieceValue[EG][pt])
-          score = make_score(mg_value(score), v->pieceValue[EG][pt]);
-
       CapturePieceValue[MG][pc] = CapturePieceValue[MG][~pc] = mg_value(score);
       CapturePieceValue[EG][pc] = CapturePieceValue[EG][~pc] = eg_value(score);
 

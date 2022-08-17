@@ -59,14 +59,6 @@ namespace Stockfish::Eval::NNUE::Features {
       Square s = pop_lsb(bb);
       active.push_back(make_index(perspective, s, pos.piece_on(s), oriented_ksq, pos));
     }
-
-    // Indices for pieces in hand
-    if (pos.nnue_use_pockets())
-      for (Color c : {WHITE, BLACK})
-          for (PieceType pt : pos.piece_types())
-              for (int i = 0; i < pos.count_in_hand(c, pt); i++)
-                  active.push_back(make_index(perspective, i, make_piece(c, pt), oriented_ksq, pos));
-
   }
 
   // append_changed_indices() : get a list of indices for recently changed features

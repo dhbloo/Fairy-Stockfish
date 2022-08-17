@@ -121,7 +121,6 @@ public:
   Rank promotion_rank() const;
   PieceType nnue_king() const;
   Square nnue_king_square(Color c) const;
-  bool nnue_use_pockets() const;
   bool nnue_applicable() const;
   bool has_capture() const;
   bool can_drop(Color c, PieceType pt) const;
@@ -336,14 +335,9 @@ inline Square Position::nnue_king_square(Color c) const {
   return nnue_king() ? square(c, nnue_king()) : SQ_NONE;
 }
 
-inline bool Position::nnue_use_pockets() const {
-  assert(var != nullptr);
-  return var->nnueUsePockets;
-}
-
 inline bool Position::nnue_applicable() const {
   // Do not use NNUE during setup phases (placement, sittuyin)
-  return (!count_in_hand(ALL_PIECES) || nnue_use_pockets()) && !virtualPieces;
+  return !count_in_hand(ALL_PIECES) && !virtualPieces;
 }
 
 inline bool Position::has_capture() const {

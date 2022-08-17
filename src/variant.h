@@ -39,8 +39,6 @@ struct Variant {
   std::string pieceToCharTable = "-";
   Rank maxRank = RANK_10;
   File maxFile = FILE_I;
-  int pieceValue[PHASE_NB][PIECE_TYPE_NB] = {};
-  std::string customPiece[CUSTOM_PIECES_NB] = {};
   std::set<PieceType> pieceTypes = { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
   std::string pieceToChar =  " PNBRQ" + std::string(KING - QUEEN - 1, ' ') + "K" + std::string(PIECE_TYPE_NB - KING - 1, ' ')
                            + " pnbrq" + std::string(KING - QUEEN - 1, ' ') + "k" + std::string(PIECE_TYPE_NB - KING - 1, ' ');
@@ -52,7 +50,6 @@ struct Variant {
   std::string nnueAlias = "";
   PieceType nnueKing = KING;
   int nnueDimensions;
-  bool nnueUsePockets;
   int pieceSquareIndex[COLOR_NB][PIECE_NB];
   int pieceHandIndex[COLOR_NB][PIECE_NB];
   int kingSquareIndex[SQUARE_NB];
@@ -64,9 +61,6 @@ struct Variant {
       pieceToCharSynonyms[make_piece(WHITE, pt)] = toupper(c2);
       pieceToCharSynonyms[make_piece(BLACK, pt)] = tolower(c2);
       pieceTypes.insert(pt);
-      // Add betza notation for custom piece
-      if (is_custom(pt))
-          customPiece[pt - CUSTOM_PIECES] = betza;
   }
 
   void add_piece(PieceType pt, char c, char c2) {
@@ -99,7 +93,6 @@ struct Variant {
       // Initialize calculated NNUE properties
       nnueKing = KING;
       int nnueSquares = 90;
-      nnueUsePockets = false;
       int nnuePockets = 0;
       int nnueNonDropPieceIndices = (2 * pieceTypes.size() - (nnueKing != NO_PIECE_TYPE)) * nnueSquares;
       int nnuePieceIndices = nnueNonDropPieceIndices + 2 * (pieceTypes.size() - (nnueKing != NO_PIECE_TYPE)) * nnuePockets;
