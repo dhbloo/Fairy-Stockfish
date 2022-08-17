@@ -270,14 +270,8 @@ void init(const Variant* v) {
                                  : isPawn      ? make_score(5, 5) * (2 * f - v->maxFile)
                                                : make_score(10, 10) * (1 + isSlowLeaper) * (f + std::max(std::min(r, Rank(v->maxRank - r)), RANK_1) - v->maxFile / 2));
           // Add a penalty for unpromoted soldiers
-          if (pt == SOLDIER && r < v->soldierPromotionRank)
-              psq[pc][s] -= score * (v->soldierPromotionRank - r) / (4 + f);
-          // Corners are valuable in reversi
-          if (v->enclosingDrop == REVERSI)
-          {
-              if (f == FILE_A && (r == RANK_1 || r == v->maxRank))
-                  psq[pc][s] += make_score(1000, 1000);
-          }
+          if (pt == SOLDIER && r < RANK_6)
+              psq[pc][s] -= score * (RANK_6 - r) / (4 + f);
           psq[~pc][rank_of(s) <= v->maxRank ? flip_rank(s, v->maxRank) : s] = -psq[pc][s];
       }
       // Pieces in hand

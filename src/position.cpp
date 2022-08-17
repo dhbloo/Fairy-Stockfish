@@ -491,7 +491,7 @@ namespace Stockfish {
         auto add_attacks = [&](PieceType pt) {
             if (board_bb(c, pt) & s)
             {
-                PieceType move_pt = pt == KING ? king_type() : pt;
+                PieceType move_pt = pt == KING ? WAZIR : pt;
                 // Consider asymmetrical moves (e.g., horse)
                 if (AttackRiderTypes[move_pt] & ASYMMETRICAL_RIDERS)
                     b |= attacks_by_horse(s, occupied) & pieces(c, pt);
@@ -509,7 +509,7 @@ namespace Stockfish {
         add_attacks(PieceType::KING);
 
         // Unpromoted soldiers
-        if (b & pieces(SOLDIER) && relative_rank(c, s, max_rank()) < var->soldierPromotionRank)
+        if (b & pieces(SOLDIER) && relative_rank(c, s, max_rank()) < RANK_6)
             b ^= b & pieces(SOLDIER) & ~PseudoAttacks[~c][SHOGI_PAWN][s];
 
         return b;
@@ -1331,9 +1331,7 @@ namespace Stockfish {
 
         if ((sideToMove != WHITE && sideToMove != BLACK)
             || (count<KING>(WHITE) && piece_on(square<KING>(WHITE)) != make_piece(WHITE, KING))
-            || (count<KING>(BLACK) && piece_on(square<KING>(BLACK)) != make_piece(BLACK, KING))
-            || (ep_square() != SQ_NONE
-                && relative_rank(~sideToMove, ep_square(), max_rank()) > Rank(double_step_rank_max() + 1)))
+            || (count<KING>(BLACK) && piece_on(square<KING>(BLACK)) != make_piece(BLACK, KING)))
             assert(0 && "pos_is_ok: Default");
 
         if (Fast)

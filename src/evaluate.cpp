@@ -479,16 +479,7 @@ namespace {
         else
             mobility[Us] += MaxMobility * (mob - 2) / (8 + mob);
 
-        // Piece promotion bonus
-        if (pos.promoted_piece_type(Pt) != NO_PIECE_TYPE)
-        {
-            Bitboard zone = zone_bb(Us, pos.promotion_rank(), pos.max_rank());
-            if (zone & (b | s))
-                score += make_score(PieceValue[MG][pos.promoted_piece_type(Pt)] - PieceValue[MG][Pt],
-                                    PieceValue[EG][pos.promoted_piece_type(Pt)] - PieceValue[EG][Pt]) / (zone & s && b ? 6 : 12);
-        }
-
-        else if (pos.count<KING>(Us) && (Pt == FERS || Pt == SILVER))
+        if (pos.count<KING>(Us) && (Pt == FERS || Pt == SILVER))
             score -= EndgameKingProximity * (distance(s, pos.square<KING>(Us)) - 2);
 
         if (Pt == SOLDIER && (pos.pieces(Us, SOLDIER) & rank_bb(s) & adjacent_files_bb(s)))
@@ -591,10 +582,6 @@ namespace {
         }
         Bitboard theirHalf = pos.board_bb() & ~forward_ranks_bb(Them, relative_rank(Them, Rank((pos.max_rank() - 1) / 2), pos.max_rank()));
         mobility[Us] += DropMobility * popcount(b & theirHalf & ~attackedBy[Them][ALL_PIECES]);
-
-        // Mobility bonus for reversi variants
-        if (pos.enclosing_drop())
-            mobility[Us] += make_score(500, 500) * popcount(b);
     }
 
     return score;
@@ -679,7 +666,7 @@ namespace {
                  +   3 * kingFlankAttack * kingFlankAttack / 8
                  +       mg_value(mobility[Them] - mobility[Us])
                  - 873 * !pos.major_pieces(Them)
-                       * 2 / (2 + (pos.king_type() != KING) * (pos.diagonal_lines() ? 1 : 2))
+                       * 2 / (2 + (pos.diagonal_lines() ? 1 : 2))
                  - 100 * bool(attackedBy[Us][KNIGHT] & attackedBy[Us][KING])
                  -   6 * mg_value(score) / 8
                  -   4 * kingFlankDefense
@@ -893,24 +880,6 @@ namespace {
     }
     score = make_score(mg_value(score) * int(maxMg - PawnValueMg) / (QueenValueMg - PawnValueMg),
                        eg_value(score) * int(maxEg - PawnValueEg) / (QueenValueEg - PawnValueEg));
-
-    // Score passed shogi pawns
-    PieceType pt = pos.promoted_piece_type(SHOGI_PAWN);
-    if (pt != NO_PIECE_TYPE)
-    {
-        b = pos.pieces(Us, SHOGI_PAWN);
-        while (b)
-        {
-            Square s = pop_lsb(b);
-            if ((pos.pieces(Them, SHOGI_PAWN) & forward_file_bb(Us, s)) || relative_rank(Us, s, pos.max_rank()) == pos.max_rank())
-                continue;
-
-            Square blockSq = s + Up;
-            int d = 2 * std::max(pos.promotion_rank() - relative_rank(Us, s, pos.max_rank()), 1);
-            d += !!(attackedBy[Them][ALL_PIECES] & ~attackedBy2[Us] & blockSq);
-            score += make_score(PieceValue[MG][pt], PieceValue[EG][pt]) / (d * d);
-        }
-    }
 
     if constexpr (T)
         Trace::add(PASSED, Us, score);

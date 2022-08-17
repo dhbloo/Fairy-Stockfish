@@ -696,18 +696,6 @@ inline FenValidation validate_fen(const std::string& fen, const Variant* v, bool
         // (variants like giveaway use the COMMONER piece type instead)
         if (check_number_of_kings(fenParts[0], startFenParts[0], v) == NOK)
             return FEN_INVALID_NUMBER_OF_KINGS;
-
-        // check for touching kings if there are exactly two royal kings on the board (excluding pocket)
-        if (   v->kingType == KING
-            && piece_count(fenParts[0], WHITE, KING, v) - piece_count(pocket, WHITE, KING, v) == 1
-            && piece_count(fenParts[0], BLACK, KING, v) - piece_count(pocket, BLACK, KING, v) == 1)
-        {
-            std::array<CharSquare, 2> kingPositions;
-            kingPositions[WHITE] = board.get_square_for_piece(v->pieceToChar[make_piece(WHITE, KING)]);
-            kingPositions[BLACK] = board.get_square_for_piece(v->pieceToChar[make_piece(BLACK, KING)]);
-            if (check_touching_kings(board, kingPositions) == NOK)
-                return FEN_TOUCHING_KINGS;
-        }
     }
 
     // 2) Part

@@ -130,26 +130,9 @@ namespace {
 
         Bitboard b1 = (  (pos.attacks_from(Us, Pt, from) & pos.pieces())
                        | (pos.moves_from(Us, Pt, from) & ~pos.pieces())) & target;
-        PieceType promPt = pos.promoted_piece_type(Pt);
-        Bitboard b2 = promPt && (!pos.promotion_limit(promPt) || pos.promotion_limit(promPt) > pos.count(Us, promPt)) ? b1 : Bitboard(0);
-
-        // Restrict target squares considering promotion zone
-        if (b2)
-        {
-            Bitboard promotion_zone = zone_bb(Us, pos.promotion_rank(), pos.max_rank());
-            // Consider promotions/demotions into promotion zone
-            if (!(promotion_zone & from))
-            {
-                b2 &= promotion_zone;
-            }
-        }
 
         if (Checks)
-        {
             b1 &= pos.check_squares(Pt);
-            if (b2)
-                b2 &= pos.check_squares(pos.promoted_piece_type(Pt));
-        }
 
         while (b1)
             moveList = make_move_and_gating<NORMAL>(pos, moveList, Us, from, pop_lsb(b1));

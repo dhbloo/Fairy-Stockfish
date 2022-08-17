@@ -48,20 +48,7 @@ struct Variant {
   std::string startFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
   Bitboard mobilityRegion[COLOR_NB][PIECE_TYPE_NB] = {};
   Bitboard boardbb[COLOR_NB][PIECE_TYPE_NB] = {};
-  Rank promotionRank = RANK_8;
   std::set<PieceType, std::greater<PieceType> > promotionPieceTypes = { QUEEN, ROOK, BISHOP, KNIGHT };
-  int promotionLimit[PIECE_TYPE_NB] = {}; // 0 means unlimited
-  PieceType promotedPieceType[PIECE_TYPE_NB] = {};
-  Rank doubleStepRank = RANK_2;
-  Rank doubleStepRankMin = RANK_2;
-  PieceType kingType = KING;
-  PieceType mustDropType = ALL_PIECES;
-  EnclosingRule enclosingDrop = NO_ENCLOSING;
-  Bitboard enclosingDropStart = 0;
-  Bitboard whiteDropRegion = AllSquares;
-  Bitboard blackDropRegion = AllSquares;
-  Bitboard diagonalLines = 0;
-  Rank soldierPromotionRank = RANK_6;
 
   // game end
   int nFoldRule = 3;

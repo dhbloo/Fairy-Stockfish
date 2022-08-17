@@ -120,20 +120,12 @@ public:
   const std::string& piece_to_char_synonyms() const;
   Rank promotion_rank() const;
   const std::set<PieceType, std::greater<PieceType> >& promotion_piece_types() const;
-  int promotion_limit(PieceType pt) const;
-  PieceType promoted_piece_type(PieceType pt) const;
-  bool piece_promotion_on_capture() const;
-  bool mandatory_piece_promotion() const;
-  Rank double_step_rank_max() const;
-  Rank double_step_rank_min() const;
-  PieceType king_type() const;
   PieceType nnue_king() const;
   Square nnue_king_square(Color c) const;
   bool nnue_use_pockets() const;
   bool nnue_applicable() const;
   bool has_capture() const;
   bool can_drop(Color c, PieceType pt) const;
-  EnclosingRule enclosing_drop() const;
   Bitboard drop_region(Color c) const;
   Bitboard drop_region(Color c, PieceType pt) const;
   Bitboard diagonal_lines() const;
@@ -343,37 +335,12 @@ inline const std::string& Position::piece_to_char_synonyms() const {
 
 inline Rank Position::promotion_rank() const {
   assert(var != nullptr);
-  return var->promotionRank;
+  return RANK_8;
 }
 
 inline const std::set<PieceType, std::greater<PieceType> >& Position::promotion_piece_types() const {
   assert(var != nullptr);
   return var->promotionPieceTypes;
-}
-
-inline int Position::promotion_limit(PieceType pt) const {
-  assert(var != nullptr);
-  return var->promotionLimit[pt];
-}
-
-inline PieceType Position::promoted_piece_type(PieceType pt) const {
-  assert(var != nullptr);
-  return var->promotedPieceType[pt];
-}
-
-inline Rank Position::double_step_rank_max() const {
-  assert(var != nullptr);
-  return var->doubleStepRank;
-}
-
-inline Rank Position::double_step_rank_min() const {
-  assert(var != nullptr);
-  return var->doubleStepRankMin;
-}
-
-inline PieceType Position::king_type() const {
-  assert(var != nullptr);
-  return var->kingType;
 }
 
 inline PieceType Position::nnue_king() const {
@@ -421,14 +388,10 @@ inline bool Position::has_capture() const {
   return false;
 }
 
-inline EnclosingRule Position::enclosing_drop() const {
-  assert(var != nullptr);
-  return var->enclosingDrop;
-}
 
 inline Bitboard Position::drop_region(Color c) const {
   assert(var != nullptr);
-  return c == WHITE ? var->whiteDropRegion : var->blackDropRegion;
+  return AllSquares;
 }
 
 inline Bitboard Position::drop_region(Color c, PieceType pt) const {
@@ -441,53 +404,18 @@ inline Bitboard Position::drop_region(Color c, PieceType pt) const {
       b &= ~rank_bb(relative_rank(c, RANK_1, max_rank()));
   }
 
-  // Filter out squares where the drop does not enclose at least one opponent's piece
-  if (enclosing_drop())
-  {
-      // Reversi start
-      if (var->enclosingDropStart & ~pieces())
-          b &= var->enclosingDropStart;
-      else
-      {
-          if (enclosing_drop() == REVERSI)
-          {
-              Bitboard theirs = pieces(~c);
-              b &=  shift<NORTH     >(theirs) | shift<SOUTH     >(theirs)
-                  | shift<NORTH_EAST>(theirs) | shift<SOUTH_WEST>(theirs)
-                  | shift<EAST      >(theirs) | shift<WEST      >(theirs)
-                  | shift<SOUTH_EAST>(theirs) | shift<NORTH_WEST>(theirs);
-              Bitboard b2 = b;
-              while (b2)
-              {
-                  Square s = pop_lsb(b2);
-                  if (!(attacks_bb(c, QUEEN, s, board_bb() & ~pieces(~c)) & ~PseudoAttacks[c][KING][s] & pieces(c)))
-                      b ^= s;
-              }
-          }
-          else
-          {
-              assert(enclosing_drop() == ATAXX);
-              Bitboard ours = pieces(c);
-              b &=  shift<NORTH     >(ours) | shift<SOUTH     >(ours)
-                  | shift<NORTH_EAST>(ours) | shift<SOUTH_WEST>(ours)
-                  | shift<EAST      >(ours) | shift<WEST      >(ours)
-                  | shift<SOUTH_EAST>(ours) | shift<NORTH_WEST>(ours);
-          }
-      }
-  }
-
   return b;
 }
 
 
 inline Bitboard Position::diagonal_lines() const {
   assert(var != nullptr);
-  return var->diagonalLines;
+  return Bitboard(0);
 }
 
 inline Bitboard Position::promoted_soldiers(Color c) const {
   assert(var != nullptr);
-  return pieces(c, SOLDIER) & zone_bb(c, var->soldierPromotionRank, max_rank());
+  return pieces(c, SOLDIER) & zone_bb(c, RANK_6, max_rank());
 }
 
 inline int Position::n_fold_rule() const {
