@@ -622,7 +622,7 @@ namespace {
     std::function <Bitboard (Color, PieceType)> get_attacks = [this](Color c, PieceType pt) {
         return attackedBy[c][pt];
     };
-    for (PieceType pt : pos.piece_types())
+    for (PieceType pt : pieceTypes)
     {
         switch (pt)
         {
@@ -1048,7 +1048,7 @@ namespace {
 
     // Pieces evaluated first (also populates attackedBy, attackedBy2).
     // For unused piece types, we still need to set attack bitboard to zero.
-    for (PieceType pt : pos.piece_types())
+    for (PieceType pt : pieceTypes)
         if (pt != KING)
             score += pieces<WHITE>(pt) - pieces<BLACK>(pt);
 

@@ -282,7 +282,7 @@ namespace Stockfish {
 
         // For unused piece types, the check squares are left uninitialized
         si->nonSlidingRiders = 0;
-        for (PieceType pt : piece_types())
+        for (PieceType pt : pieceTypes)
         {
             si->checkSquares[pt] = ksq != SQ_NONE ? attacks_bb(~sideToMove, pt, ksq, pieces()) : Bitboard(0);
             // Collect special piece types that require slower check and evasion detection
@@ -453,7 +453,6 @@ namespace Stockfish {
             }
         };
 
-        assert(piece_types().size() == 7);
         add_snipers(PieceType::ROOK);
         add_snipers(PieceType::FERS);
         add_snipers(PieceType::CANNON);

@@ -260,7 +260,7 @@ inline bool has_insufficient_material(Color c, const Position& pos) {
 
     // Restricted pieces
     Bitboard restricted = pos.pieces(~c, KING);
-    for (PieceType pt : pos.piece_types())
+    for (PieceType pt : pieceTypes)
         if (pt == KING || !(pos.board_bb(c, pt) & pos.board_bb(~c, KING)))
             restricted |= pos.pieces(c, pt);
         else if (is_custom(pt) && pos.count(c, pt) > 0)
@@ -685,7 +685,6 @@ inline FenValidation validate_fen(const std::string& fen, const Variant* v, bool
     std::string pocket = "";
 
     // check for number of kings
-    if (v->pieceTypes.find(KING) != v->pieceTypes.end())
     {
         // we have a royal king in this variant,
         // ensure that each side has exactly as many kings as in the starting position

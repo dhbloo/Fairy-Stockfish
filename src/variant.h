@@ -19,6 +19,7 @@
 #ifndef VARIANT_H_INCLUDED
 #define VARIANT_H_INCLUDED
 
+#include <array>
 #include <set>
 #include <map>
 #include <vector>
@@ -34,14 +35,14 @@ namespace Stockfish {
 
 /// Variant struct stores information needed to determine the rules of a variant.
 
+constexpr std::array<PieceType, 7> pieceTypes = { ROOK, FERS, CANNON, SOLDIER, HORSE, ELEPHANT, KING };
+
 struct Variant {
   std::string variantTemplate = "fairy";
   std::string pieceToCharTable = "-";
   Rank maxRank = RANK_10;
   File maxFile = FILE_I;
-  std::set<PieceType> pieceTypes = { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
-  std::string pieceToChar =  " PNBRQ" + std::string(KING - QUEEN - 1, ' ') + "K" + std::string(PIECE_TYPE_NB - KING - 1, ' ')
-                           + " pnbrq" + std::string(KING - QUEEN - 1, ' ') + "k" + std::string(PIECE_TYPE_NB - KING - 1, ' ');
+  std::string pieceToChar = std::string(PIECE_NB, ' ');
   std::string pieceToCharSynonyms = std::string(PIECE_NB, ' ');
   std::string startFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
   Bitboard mobilityRegion[COLOR_NB][PIECE_TYPE_NB] = {};
@@ -55,30 +56,11 @@ struct Variant {
   int kingSquareIndex[SQUARE_NB];
   int nnueMaxPieces;
 
-  void add_piece(PieceType pt, char c, std::string betza = "", char c2 = ' ') {
+  void add_piece(PieceType pt, char c, char c2 = ' ') {
       pieceToChar[make_piece(WHITE, pt)] = toupper(c);
       pieceToChar[make_piece(BLACK, pt)] = tolower(c);
       pieceToCharSynonyms[make_piece(WHITE, pt)] = toupper(c2);
       pieceToCharSynonyms[make_piece(BLACK, pt)] = tolower(c2);
-      pieceTypes.insert(pt);
-  }
-
-  void add_piece(PieceType pt, char c, char c2) {
-      add_piece(pt, c, "", c2);
-  }
-
-  void remove_piece(PieceType pt) {
-      pieceToChar[make_piece(WHITE, pt)] = ' ';
-      pieceToChar[make_piece(BLACK, pt)] = ' ';
-      pieceToCharSynonyms[make_piece(WHITE, pt)] = ' ';
-      pieceToCharSynonyms[make_piece(BLACK, pt)] = ' ';
-      pieceTypes.erase(pt);
-  }
-
-  void reset_pieces() {
-      pieceToChar = std::string(PIECE_NB, ' ');
-      pieceToCharSynonyms = std::string(PIECE_NB, ' ');
-      pieceTypes.clear();
   }
 
   // Reset values that always need to be redefined

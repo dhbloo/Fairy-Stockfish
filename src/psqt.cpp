@@ -183,7 +183,7 @@ Score psq[PIECE_NB][SQUARE_NB + 1];
 void init(const Variant* v) {
 
   PieceType strongestPiece = NO_PIECE_TYPE;
-  for (PieceType pt : v->pieceTypes)
+  for (PieceType pt : pieceTypes)
   {
       if (is_custom(pt))
       {

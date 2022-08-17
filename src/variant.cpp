@@ -35,7 +35,6 @@ namespace {
         Variant* v = new Variant();
         v->variantTemplate = "xiangqi";
         v->pieceToCharTable = "PN.R.AB..K.C..........pn.r.ab..k.c..........";
-        v->reset_pieces();
         v->add_piece(ROOK, 'r');
         v->add_piece(HORSE, 'n', 'h');
         v->add_piece(KING, 'k');

@@ -172,7 +172,7 @@ namespace {
         target &= pos.board_bb();
 
         moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
-        for (PieceType pt : pos.piece_types())
+        for (PieceType pt : pieceTypes)
             if (pt != KING)
                 moveList = generate_moves<Us, Checks>(pos, moveList, pt, target);
     }

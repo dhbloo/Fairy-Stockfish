@@ -115,7 +115,6 @@ public:
   int files() const;
   Bitboard board_bb() const;
   Bitboard board_bb(Color c, PieceType pt) const;
-  const std::set<PieceType>& piece_types() const;
   const std::string& piece_to_char() const;
   const std::string& piece_to_char_synonyms() const;
   Rank promotion_rank() const;
@@ -304,11 +303,6 @@ inline Bitboard Position::board_bb() const {
 inline Bitboard Position::board_bb(Color c, PieceType pt) const {
   assert(var != nullptr);
   return var->boardbb[c][pt];
-}
-
-inline const std::set<PieceType>& Position::piece_types() const {
-  assert(var != nullptr);
-  return var->pieceTypes;
 }
 
 inline const std::string& Position::piece_to_char() const {
