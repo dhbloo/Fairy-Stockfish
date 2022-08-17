@@ -49,7 +49,6 @@ struct Variant {
   Bitboard boardbb[COLOR_NB][PIECE_TYPE_NB] = {};
 
   std::string nnueAlias = "";
-  PieceType nnueKing = KING;
   int nnueDimensions;
   int pieceSquareIndex[COLOR_NB][PIECE_NB];
   int pieceHandIndex[COLOR_NB][PIECE_NB];
@@ -73,18 +72,17 @@ struct Variant {
   Variant* conclude() {
 
       // Initialize calculated NNUE properties
-      nnueKing = KING;
       int nnueSquares = 90;
       int nnuePockets = 0;
-      int nnueNonDropPieceIndices = (2 * pieceTypes.size() - (nnueKing != NO_PIECE_TYPE)) * nnueSquares;
-      int nnuePieceIndices = nnueNonDropPieceIndices + 2 * (pieceTypes.size() - (nnueKing != NO_PIECE_TYPE)) * nnuePockets;
+      int nnueNonDropPieceIndices = (2 * pieceTypes.size() - (KING != NO_PIECE_TYPE)) * nnueSquares;
+      int nnuePieceIndices = nnueNonDropPieceIndices + 2 * (pieceTypes.size() - (KING != NO_PIECE_TYPE)) * nnuePockets;
       int i = 0;
       for (PieceType pt : pieceTypes)
       {
           for (Color c : { WHITE, BLACK})
           {
               pieceSquareIndex[c][make_piece(c, pt)] = 2 * i * nnueSquares;
-              pieceSquareIndex[c][make_piece(~c, pt)] = (2 * i + (pt != nnueKing)) * nnueSquares;
+              pieceSquareIndex[c][make_piece(~c, pt)] = (2 * i + (pt != KING)) * nnueSquares;
               pieceHandIndex[c][make_piece(c, pt)] = 2 * i * nnuePockets + nnueNonDropPieceIndices;
               pieceHandIndex[c][make_piece(~c, pt)] = (2 * i + 1) * nnuePockets + nnueNonDropPieceIndices;
           }
@@ -95,13 +93,13 @@ struct Variant {
       // E.g., for xiangqi map from 0-89 to 0-8.
       // Variants might be initialized before bitboards, so do not rely on precomputed bitboards (like SquareBB).
       int nnueKingSquare = 0;
-      if (nnueKing)
+      if (KING)
           for (Square s = SQ_A1; s < nnueSquares; ++s)
           {
               Square bitboardSquare = Square(s + s / (maxFile + 1) * (FILE_MAX - maxFile));
-              if (   !mobilityRegion[WHITE][nnueKing] || !mobilityRegion[BLACK][nnueKing]
-                  || (mobilityRegion[WHITE][nnueKing] & make_bitboard(bitboardSquare))
-                  || (mobilityRegion[BLACK][nnueKing] & make_bitboard(relative_square(BLACK, bitboardSquare, RANK_10))))
+              if (   !mobilityRegion[WHITE][KING] || !mobilityRegion[BLACK][KING]
+                  || (mobilityRegion[WHITE][KING] & make_bitboard(bitboardSquare))
+                  || (mobilityRegion[BLACK][KING] & make_bitboard(relative_square(BLACK, bitboardSquare, RANK_10))))
               {
                   kingSquareIndex[s] = nnueKingSquare++ * nnuePieceIndices;
               }

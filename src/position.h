@@ -123,9 +123,7 @@ public:
   bool nnue_applicable() const;
   bool has_capture() const;
   bool can_drop(Color c, PieceType pt) const;
-  Bitboard drop_region(Color c) const;
   Bitboard drop_region(Color c, PieceType pt) const;
-  Bitboard diagonal_lines() const;
   Bitboard promoted_soldiers(Color c) const;
   // winning conditions
   int n_fold_rule() const;
@@ -137,7 +135,6 @@ public:
   int count_in_hand(PieceType pt) const;
   int count_in_hand(Color c, PieceType pt) const;
   int count_with_hand(Color c, PieceType pt) const;
-  bool allow_virtual_drop(Color c, PieceType pt) const;
 
   // Position representation
   Bitboard pieces(PieceType pt = ALL_PIECES) const;
@@ -216,7 +213,6 @@ public:
   bool is_optional_game_end() const;
   bool is_optional_game_end(Value& result, int ply = 0, int countStarted = 0) const;
   bool is_game_end(Value& result, int ply = 0) const;
-  Value material_counting_result() const;
   bool is_draw(int ply) const;
   bool has_repeated() const;
   Bitboard chased() const;
@@ -260,12 +256,9 @@ private:
   // variant-specific
   const Variant* var;
   int pieceCountInHand[COLOR_NB][PIECE_TYPE_NB];
-  int virtualPieces;
   Bitboard promotedPieces;
   void add_to_hand(Piece pc);
   void remove_from_hand(Piece pc);
-  void drop_piece(Piece pc_hand, Piece pc_drop, Square s);
-  void undrop_piece(Piece pc_hand, Square s);
 };
 
 extern std::ostream& operator<<(std::ostream& os, const Position& pos);
@@ -322,7 +315,7 @@ inline Rank Position::promotion_rank() const {
 
 inline PieceType Position::nnue_king() const {
   assert(var != nullptr);
-  return var->nnueKing;
+  return KING;
 }
 
 inline Square Position::nnue_king_square(Color c) const {
@@ -331,7 +324,7 @@ inline Square Position::nnue_king_square(Color c) const {
 
 inline bool Position::nnue_applicable() const {
   // Do not use NNUE during setup phases (placement, sittuyin)
-  return !count_in_hand(ALL_PIECES) && !virtualPieces;
+  return !count_in_hand(ALL_PIECES);
 }
 
 inline bool Position::has_capture() const {
@@ -361,13 +354,8 @@ inline bool Position::has_capture() const {
 }
 
 
-inline Bitboard Position::drop_region(Color c) const {
-  assert(var != nullptr);
-  return AllSquares;
-}
-
 inline Bitboard Position::drop_region(Color c, PieceType pt) const {
-  Bitboard b = drop_region(c) & board_bb(c, pt);
+  Bitboard b = AllSquares & board_bb(c, pt);
 
   // Pawns on back ranks
   if (pt == PAWN)
@@ -377,12 +365,6 @@ inline Bitboard Position::drop_region(Color c, PieceType pt) const {
   }
 
   return b;
-}
-
-
-inline Bitboard Position::diagonal_lines() const {
-  assert(var != nullptr);
-  return Bitboard(0);
 }
 
 inline Bitboard Position::promoted_soldiers(Color c) const {
@@ -699,22 +681,6 @@ inline int Position::count_with_hand(Color c, PieceType pt) const {
   return pieceCount[make_piece(c, pt)] + pieceCountInHand[c][pt];
 }
 
-inline bool Position::allow_virtual_drop(Color c, PieceType pt) const {
-  // Do we allow a virtual drop?
-  return pt != KING && (   count_in_hand(c, PAWN) >= -(pt == PAWN)
-                        && count_in_hand(c, KNIGHT) >= -(pt == PAWN)
-                        && count_in_hand(c, BISHOP) >= -(pt == PAWN)
-                        && count_in_hand(c, ROOK) >= 0
-                        && count_in_hand(c, QUEEN) >= 0);
-}
-
-inline Value Position::material_counting_result() const {
-  auto weigth_count = [this](PieceType pt, int v){ return v * (count(WHITE, pt) - count(BLACK, pt)); };
-  int materialCount;
-  Value result = VALUE_DRAW;
-  return sideToMove == WHITE ? result : -result;
-}
-
 inline void Position::add_to_hand(Piece pc) {
   pieceCountInHand[color_of(pc)][type_of(pc)]++;
   pieceCountInHand[color_of(pc)][ALL_PIECES]++;
@@ -725,21 +691,6 @@ inline void Position::remove_from_hand(Piece pc) {
   pieceCountInHand[color_of(pc)][type_of(pc)]--;
   pieceCountInHand[color_of(pc)][ALL_PIECES]--;
   psq -= PSQT::psq[pc][SQ_NONE];
-}
-
-inline void Position::drop_piece(Piece pc_hand, Piece pc_drop, Square s) {
-  assert(can_drop(color_of(pc_hand), type_of(pc_hand)));
-  put_piece(pc_drop, s, pc_drop != pc_hand, pc_drop != pc_hand ? pc_hand : NO_PIECE);
-  remove_from_hand(pc_hand);
-  virtualPieces += (pieceCountInHand[color_of(pc_hand)][type_of(pc_hand)] < 0);
-}
-
-inline void Position::undrop_piece(Piece pc_hand, Square s) {
-  virtualPieces -= (pieceCountInHand[color_of(pc_hand)][type_of(pc_hand)] < 0);
-  remove_piece(s);
-  board[s] = NO_PIECE;
-  add_to_hand(pc_hand);
-  assert(can_drop(color_of(pc_hand), type_of(pc_hand)));
 }
 
 inline bool Position::can_drop(Color c, PieceType pt) const {
