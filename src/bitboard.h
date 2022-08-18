@@ -427,27 +427,27 @@ inline RiderType pop_rider(RiderType* r) {
 }
 
 inline Bitboard attacks_bb(Color c, PieceType pt, Square s, Bitboard occupied) {
-  Bitboard b = LeaperAttacks[c][pt][s];
+  Bitboard b;
 
   switch (pt) {
   case ROOK: 
-      b |= rider_attacks_bb<RIDER_ROOK_H>(s, occupied);
+      b = rider_attacks_bb<RIDER_ROOK_H>(s, occupied);
       b |= rider_attacks_bb<RIDER_ROOK_V>(s, occupied);
-      break;
+      return b & PseudoAttacks[c][pt][s];
   case CANNON: 
-      b |= rider_attacks_bb<RIDER_CANNON_H>(s, occupied);
+      b = rider_attacks_bb<RIDER_CANNON_H>(s, occupied);
       b |= rider_attacks_bb<RIDER_CANNON_V>(s, occupied);
-      break;
+      return b & PseudoAttacks[c][pt][s];
   case HORSE: 
-      b |= rider_attacks_bb<RIDER_HORSE>(s, occupied);
-      break;
+      b = rider_attacks_bb<RIDER_HORSE>(s, occupied);
+      return b & PseudoAttacks[c][pt][s];
   case ELEPHANT: 
-      b |= rider_attacks_bb<RIDER_ELEPHANT>(s, occupied);
-      break;
-  default: break;
+      b = rider_attacks_bb<RIDER_ELEPHANT>(s, occupied);
+      return b & PseudoAttacks[c][pt][s];
+  default:
+      b = LeaperAttacks[c][pt][s];
+      return b & PseudoAttacks[c][pt][s];
   }
-
-  return b & PseudoAttacks[c][pt][s];
 }
 
 
