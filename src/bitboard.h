@@ -91,6 +91,7 @@ extern Bitboard LeaperAttacks[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
 extern Bitboard LeaperMoves[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
 extern Bitboard SquareBB[SQUARE_NB];
 extern Bitboard BoardSizeBB[FILE_NB][RANK_NB];
+extern Bitboard BoardBB[COLOR_NB][PIECE_TYPE_NB];
 extern RiderType AttackRiderTypes[PIECE_TYPE_NB];
 extern RiderType MoveRiderTypes[PIECE_TYPE_NB];
 
@@ -444,7 +445,7 @@ inline Bitboard attacks_bb(Color c, PieceType pt, Square s, Bitboard occupied) {
   case ELEPHANT: 
       return rider_attacks_bb<RIDER_ELEPHANT>(s, occupied);
   default:
-      return LeaperAttacks[c][pt][s] & PseudoAttacks[c][pt][s];
+      return PseudoAttacks[c][pt][s];
   }
 }
 

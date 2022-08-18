@@ -291,8 +291,7 @@ inline Bitboard Position::board_bb() const {
 }
 
 inline Bitboard Position::board_bb(Color c, PieceType pt) const {
-  assert(var != nullptr);
-  return var->boardbb[c][pt];
+  return BoardBB[c][pt];
 }
 
 inline const std::string& Position::piece_to_char() const {

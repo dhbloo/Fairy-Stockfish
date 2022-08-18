@@ -46,7 +46,6 @@ struct Variant {
   std::string pieceToCharSynonyms = std::string(PIECE_NB, ' ');
   std::string startFen = "rnbakabnr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RNBAKABNR w - - 0 1";
   Bitboard mobilityRegion[COLOR_NB][PIECE_TYPE_NB] = {};
-  Bitboard boardbb[COLOR_NB][PIECE_TYPE_NB] = {};
 
   std::string nnueAlias = "";
   int nnueDimensions;
@@ -126,7 +125,7 @@ struct Variant {
       for (Color c : {WHITE, BLACK})
           for (int pt = 0; pt < PIECE_TYPE_NB; pt++) {
               auto board_bb = board_size_bb(maxFile, maxRank);
-              boardbb[c][pt] = mobilityRegion[c][pt] ? mobilityRegion[c][pt] & board_bb : board_bb;
+              BoardBB[c][pt] = mobilityRegion[c][pt] ? mobilityRegion[c][pt] & board_bb : board_bb;
           }
   }
 };

@@ -37,6 +37,7 @@ Bitboard PseudoMoves[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
 Bitboard LeaperAttacks[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
 Bitboard LeaperMoves[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
 Bitboard BoardSizeBB[FILE_NB][RANK_NB];
+Bitboard BoardBB[COLOR_NB][PIECE_TYPE_NB];
 RiderType AttackRiderTypes[PIECE_TYPE_NB];
 RiderType MoveRiderTypes[PIECE_TYPE_NB];
 
