@@ -289,7 +289,7 @@ namespace Stockfish {
             if (AttackRiderTypes[pt] & NON_SLIDING_RIDERS)
                 si->nonSlidingRiders |= pieces(pt);
         }
-        si->shak = si->checkersBB & (byTypeBB[KNIGHT] | byTypeBB[ROOK] | byTypeBB[BERS]);
+        si->shak = si->checkersBB & (byTypeBB[KNIGHT] | byTypeBB[ROOK]);
         si->chased = chased();
         si->legalCapture = NO_VALUE;
     }

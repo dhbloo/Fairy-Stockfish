@@ -143,7 +143,6 @@ public:
   Bitboard pieces(Color c, PieceType pt) const;
   Bitboard pieces(Color c, PieceType pt1, PieceType pt2) const;
   Bitboard pieces(Color c, PieceType pt1, PieceType pt2, PieceType pt3) const;
-  Bitboard major_pieces(Color c) const;
   Bitboard non_sliding_riders() const;
   Piece piece_on(Square s) const;
   Piece unpromoted_piece_on(Square s) const;
@@ -456,10 +455,6 @@ inline Bitboard Position::pieces(Color c, PieceType pt1, PieceType pt2, PieceTyp
   return pieces(c) & (pieces(pt1) | pieces(pt2) | pieces(pt3));
 }
 
-inline Bitboard Position::major_pieces(Color c) const {
-  return pieces(c) & (pieces(QUEEN) | pieces(AIWOK) | pieces(ARCHBISHOP) | pieces(CHANCELLOR) | pieces(AMAZON));
-}
-
 inline Bitboard Position::non_sliding_riders() const {
   return st->nonSlidingRiders;
 }
@@ -496,7 +491,7 @@ inline Bitboard Position::gates(Color c) const {
 }
 
 inline bool Position::is_on_semiopen_file(Color c, Square s) const {
-  return !((pieces(c, PAWN) | pieces(c, SHOGI_PAWN, SOLDIER)) & file_bb(s));
+  return !((pieces(c, PAWN) | pieces(c, SOLDIER)) & file_bb(s));
 }
 
 inline Bitboard Position::attacks_from(Color c, PieceType pt, Square s) const {

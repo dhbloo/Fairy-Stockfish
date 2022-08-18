@@ -479,7 +479,7 @@ namespace {
         else
             mobility[Us] += MaxMobility * (mob - 2) / (8 + mob);
 
-        if (pos.count<KING>(Us) && (Pt == FERS || Pt == SILVER))
+        if (pos.count<KING>(Us) && (Pt == FERS))
             score -= EndgameKingProximity * (distance(s, pos.square<KING>(Us)) - 2);
 
         if (Pt == SOLDIER && (pos.pieces(Us, SOLDIER) & rank_bb(s) & adjacent_files_bb(s)))
@@ -665,10 +665,10 @@ namespace {
                  +  69 * kingAttacksCount[Them]
                  +   3 * kingFlankAttack * kingFlankAttack / 8
                  +       mg_value(mobility[Them] - mobility[Us])
-                 - 873 * !pos.major_pieces(Them) / 2
                  - 100 * bool(attackedBy[Us][KNIGHT] & attackedBy[Us][KING])
                  -   6 * mg_value(score) / 8
                  -   4 * kingFlankDefense
+                 - 873 / 2
                  +  37;
 
     // Transform the kingDanger units into a Score, and subtract it from the evaluation
