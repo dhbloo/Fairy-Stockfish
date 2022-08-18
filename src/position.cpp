@@ -499,10 +499,22 @@ namespace Stockfish {
             }
         };
 
-        add_attacks(PieceType::ROOK);
-        add_attacks(PieceType::FERS);
-        add_attacks(PieceType::CANNON);
-        add_attacks(PieceType::SOLDIER);
+
+        b |= attacks_bb<ROOK>(s, occupied) & pieces(c, ROOK);
+        if (board_bb(c, FERS) & s)
+            b |= attacks_bb<FERS>(s, occupied) & pieces(c, FERS);
+        b |= attacks_bb<CANNON>(s, occupied) & pieces(c, CANNON);
+        b |= attacks_bb(~c, SOLDIER, s, occupied) & pieces(c, SOLDIER);
+        // b |= attacks_by_horse(s, occupied) & pieces(c, HORSE);
+        //if (board_bb(c, ELEPHANT) & s)
+        //    b |= attacks_bb<ELEPHANT>(s, occupied) & pieces(c, ELEPHANT);
+        //if (board_bb(c, KING) & s)
+        //    b |= attacks_bb(~c, WAZIR, s, occupied) & pieces(c, KING);
+
+        // add_attacks(PieceType::ROOK);
+        // add_attacks(PieceType::FERS);
+        // add_attacks(PieceType::CANNON);
+        // add_attacks(PieceType::SOLDIER);
         add_attacks(PieceType::HORSE);
         add_attacks(PieceType::ELEPHANT);
         add_attacks(PieceType::KING);
