@@ -444,7 +444,7 @@ namespace {
         Square s = pop_lsb(b1);
 
         // Find attacked squares, including x-ray attacks for bishops and rooks
-        b = Pt == ROOK ? attacks_bb<  ROOK>(s, pos.pieces() ^ pos.pieces(QUEEN) ^ pos.pieces(Us, ROOK))
+        b = Pt == ROOK ? attacks_bb<ROOK>(s, pos.pieces() ^ pos.pieces(Us, ROOK))
             : pos.attacks_from(Us, Pt, s);
 
         // Restrict mobility to actual squares of board
@@ -562,14 +562,13 @@ namespace {
     // Attacked squares defended at most once by our queen or king
     weak =  attackedBy[Them][ALL_PIECES]
           & ~attackedBy2[Us]
-          & (~attackedBy[Us][ALL_PIECES] | attackedBy[Us][KING] | attackedBy[Us][QUEEN]);
+          & (~attackedBy[Us][ALL_PIECES] | attackedBy[Us][KING]);
 
     // Analyse the safe enemy's checks which are possible on next move
     safe  = ~pos.pieces(Them);
     safe &= ~attackedBy[Us][ALL_PIECES] | (weak & attackedBy2[Them]);
 
-    b1 = attacks_bb<ROOK  >(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
-    b2 = attacks_bb<BISHOP>(ksq, pos.pieces() ^ pos.pieces(Us, QUEEN));
+    b1 = attacks_bb<ROOK>(ksq, pos.pieces());
 
     std::function <Bitboard (Color, PieceType)> get_attacks = [this](Color c, PieceType pt) {
         return attackedBy[c][pt];
@@ -579,7 +578,7 @@ namespace {
         switch (pt)
         {
         case ROOK:
-            knightChecks = attacks_bb(Us, pt, ksq, pos.pieces() ^ pos.pieces(Us, QUEEN)) & get_attacks(Them, pt) & pos.board_bb();
+            knightChecks = attacks_bb(Us, pt, ksq, pos.pieces()) & get_attacks(Them, pt) & pos.board_bb();
             if (knightChecks & safe)
                 kingDanger += SafeCheck[pt][more_than_one(knightChecks & safe)];
             else
@@ -617,7 +616,6 @@ namespace {
                  +  69 * kingAttacksCount[Them]
                  +   3 * kingFlankAttack * kingFlankAttack / 8
                  +       mg_value(mobility[Them] - mobility[Us])
-                 - 100 * bool(attackedBy[Us][KNIGHT] & attackedBy[Us][KING])
                  -   6 * mg_value(score) / 8
                  -   4 * kingFlankDefense
                  - 873 / 2
@@ -672,10 +670,6 @@ namespace {
     // Bonus according to the kind of attacking pieces
     if (defended | weak)
     {
-        b = (defended | weak) & (attackedBy[Us][KNIGHT] | attackedBy[Us][BISHOP]);
-        while (b)
-            score += ThreatByMinor[type_of(pos.piece_on(pop_lsb(b)))];
-
         b = weak & attackedBy[Us][ROOK];
         while (b)
             score += ThreatByRook[type_of(pos.piece_on(pop_lsb(b)))];
@@ -780,7 +774,7 @@ namespace {
                 squaresToQueen = forward_file_bb(Us, s);
                 unsafeSquares = passed_pawn_span(Us, s);
 
-                bb = forward_file_bb(Them, s) & pos.pieces(ROOK, QUEEN);
+                bb = forward_file_bb(Them, s) & pos.pieces(ROOK);
 
                 if (!(pos.pieces(Them) & bb))
                     unsafeSquares &= attackedBy[Them][ALL_PIECES] | pos.pieces(Them);

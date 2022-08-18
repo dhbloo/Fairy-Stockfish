@@ -977,7 +977,7 @@ namespace Stockfish {
                     break;
 
                 occupied ^= least_significant_square_bb(bb);
-                attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
+                attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK);
             }
 
             // fairy pieces

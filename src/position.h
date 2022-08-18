@@ -182,9 +182,7 @@ public:
   Piece captured_piece() const;
 
   // Piece specific
-  bool pawn_passed(Color c, Square s) const;
   bool is_promoted(Square s) const;
-  int  pawns_on_same_color_squares(Color c, Square s) const;
 
   // Doing and undoing moves
   void do_move(Move m, StateInfo& newSt);
@@ -491,7 +489,7 @@ inline Bitboard Position::gates(Color c) const {
 }
 
 inline bool Position::is_on_semiopen_file(Color c, Square s) const {
-  return !((pieces(c, PAWN) | pieces(c, SOLDIER)) & file_bb(s));
+  return !(pieces(c, SOLDIER) & file_bb(s));
 }
 
 inline Bitboard Position::attacks_from(Color c, PieceType pt, Square s) const {
@@ -536,14 +534,6 @@ inline Bitboard Position::pinners(Color c) const {
 
 inline Bitboard Position::check_squares(PieceType pt) const {
   return st->checkSquares[pt];
-}
-
-inline bool Position::pawn_passed(Color c, Square s) const {
-  return !(pieces(~c, PAWN) & passed_pawn_span(c, s));
-}
-
-inline int Position::pawns_on_same_color_squares(Color c, Square s) const {
-  return popcount(pieces(c, PAWN) & ((DarkSquares & s) ? DarkSquares : ~DarkSquares));
 }
 
 inline Key Position::key() const {
