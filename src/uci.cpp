@@ -57,7 +57,7 @@ namespace {
 
     if (token == "startpos")
     {
-        fen = variants.find(Options["UCI_Variant"])->second->startFen;
+        fen = variants.find("xiangqi")->second->startFen;
         is >> token; // Consume "moves" token if any
     }
     else if (token == "fen" || token == "sfen")
@@ -67,7 +67,7 @@ namespace {
         return;
 
     states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
-    pos.set(variants.find(Options["UCI_Variant"])->second, fen, &states->back(), Threads.main(), sfen);
+    pos.set(variants.find("xiangqi")->second, fen, &states->back(), Threads.main(), sfen);
 
     // Parse move list (if any)
     while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
@@ -251,8 +251,8 @@ void UCI::loop(int argc, char* argv[]) {
   StateListPtr states(new std::deque<StateInfo>(1));
 
   Options["UCI_Variant"].set_default("xiangqi");
-  assert(variants.find(Options["UCI_Variant"])->second != nullptr);
-  pos.set(variants.find(Options["UCI_Variant"])->second, variants.find(Options["UCI_Variant"])->second->startFen, &states->back(), Threads.main());
+  assert(variants.find("xiangqi")->second != nullptr);
+  pos.set(variants.find("xiangqi")->second, variants.find("xiangqi")->second->startFen, &states->back(), Threads.main());
 
   for (int i = 1; i < argc; ++i)
       cmd += std::string(argv[i]) + " ";
@@ -315,12 +315,6 @@ void UCI::loop(int argc, char* argv[]) {
       // UCI-Cyclone omits the "position" keyword
       else if (token == "fen" || token == "startpos")
       {
-          if (CurrentProtocol == UCI_GENERAL && Options["UCI_Variant"] == "chess")
-          {
-              CurrentProtocol = UCI_CYCLONE;
-              Options["UCI_Variant"].set_default("xiangqi");
-          }
-
           is.seekg(0);
           position(pos, is, states);
       }

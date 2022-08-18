@@ -85,7 +85,7 @@ namespace Eval {
     // Restrict NNUE usage to corresponding variant
     // Support multiple variant networks separated by semicolon(Windows)/colon(Unix)
     stringstream ss(eval_file);
-    string variant = string(Options["UCI_Variant"]);
+    string variant = string("xiangqi");
     useNNUE = false;
     while (getline(ss, eval_file, UCI::SepChar))
     {
