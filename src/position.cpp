@@ -289,7 +289,7 @@ namespace Stockfish {
             if (AttackRiderTypes[pt] & NON_SLIDING_RIDERS)
                 si->nonSlidingRiders |= pieces(pt);
         }
-        si->shak = si->checkersBB & (byTypeBB[KNIGHT] | byTypeBB[ROOK]);
+        si->shak = si->checkersBB & byTypeBB[ROOK];
         si->chased = chased();
         si->legalCapture = NO_VALUE;
     }
@@ -971,49 +971,13 @@ namespace Stockfish {
 
             // Locate and remove the next least valuable attacker, and add to
             // the bitboard 'attackers' any X-ray attackers behind it.
-            if ((bb = stmAttackers & pieces(PAWN)))
-            {
-                if ((swap = PawnValueMg - swap) < res)
-                    break;
-
-                occupied ^= least_significant_square_bb(bb);
-                attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
-            }
-
-            else if ((bb = stmAttackers & pieces(KNIGHT)))
-            {
-                if ((swap = KnightValueMg - swap) < res)
-                    break;
-
-                occupied ^= least_significant_square_bb(bb);
-            }
-
-            else if ((bb = stmAttackers & pieces(BISHOP)))
-            {
-                if ((swap = BishopValueMg - swap) < res)
-                    break;
-
-                occupied ^= least_significant_square_bb(bb);
-                attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
-            }
-
-            else if ((bb = stmAttackers & pieces(ROOK)))
+            if ((bb = stmAttackers & pieces(ROOK)))
             {
                 if ((swap = RookValueMg - swap) < res)
                     break;
 
                 occupied ^= least_significant_square_bb(bb);
                 attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
-            }
-
-            else if ((bb = stmAttackers & pieces(QUEEN)))
-            {
-                if ((swap = QueenValueMg - swap) < res)
-                    break;
-
-                occupied ^= least_significant_square_bb(bb);
-                attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
-                    | (attacks_bb<ROOK  >(to, occupied) & pieces(ROOK, QUEEN));
             }
 
             // fairy pieces
