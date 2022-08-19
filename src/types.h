@@ -106,7 +106,6 @@ constexpr bool Is64Bit = false;
 #endif
 
 typedef uint64_t Key;
-#ifdef LARGEBOARDS
 #if defined(__GNUC__) && defined(IS_64BIT)
 typedef unsigned __int128 Bitboard;
 #else
@@ -218,10 +217,6 @@ struct Bitboard {
 };
 #endif
 constexpr int SQUARE_BITS = 7;
-#else
-typedef uint64_t Bitboard;
-constexpr int SQUARE_BITS = 6;
-#endif
 
 #ifdef ALLVARS
 constexpr int MAX_MOVES = 4096;
@@ -255,22 +250,6 @@ constexpr int MOVE_TYPE_BITS = 4;
 
 enum Color {
   WHITE, BLACK, COLOR_NB = 2
-};
-
-enum CastlingRights {
-  NO_CASTLING,
-  WHITE_OO,
-  WHITE_OOO = WHITE_OO << 1,
-  BLACK_OO  = WHITE_OO << 2,
-  BLACK_OOO = WHITE_OO << 3,
-
-  KING_SIDE      = WHITE_OO  | BLACK_OO,
-  QUEEN_SIDE     = WHITE_OOO | BLACK_OOO,
-  WHITE_CASTLING = WHITE_OO  | WHITE_OOO,
-  BLACK_CASTLING = BLACK_OO  | BLACK_OOO,
-  ANY_CASTLING   = WHITE_CASTLING | BLACK_CASTLING,
-
-  CASTLING_RIGHT_NB = 16
 };
 
 enum CheckCount : int {
@@ -404,25 +383,16 @@ enum Piece {
 
 enum RiderType : int {
   NO_RIDER = 0,
-  RIDER_BISHOP = 1 << 0,
-  RIDER_ROOK_H = 1 << 1,
-  RIDER_ROOK_V = 1 << 2,
-  RIDER_CANNON_H = 1 << 3,
-  RIDER_CANNON_V = 1 << 4,
-  RIDER_HORSE = 1 << 5,
-  RIDER_ELEPHANT = 1 << 6,
-  RIDER_JANGGI_ELEPHANT = 1 << 7,
-  RIDER_CANNON_DIAG = 1 << 8,
-  RIDER_NIGHTRIDER = 1 << 9,
-  RIDER_GRASSHOPPER_H = 1 << 10,
-  RIDER_GRASSHOPPER_V = 1 << 11,
-  RIDER_GRASSHOPPER_D = 1 << 12,
-  HOPPING_RIDERS =  RIDER_CANNON_H | RIDER_CANNON_V | RIDER_CANNON_DIAG
-                  | RIDER_GRASSHOPPER_H | RIDER_GRASSHOPPER_V | RIDER_GRASSHOPPER_D,
-  LAME_LEAPERS = RIDER_HORSE | RIDER_ELEPHANT | RIDER_JANGGI_ELEPHANT,
-  ASYMMETRICAL_RIDERS =  RIDER_HORSE | RIDER_JANGGI_ELEPHANT
-                       | RIDER_GRASSHOPPER_H | RIDER_GRASSHOPPER_V | RIDER_GRASSHOPPER_D,
-  NON_SLIDING_RIDERS = HOPPING_RIDERS | LAME_LEAPERS | RIDER_NIGHTRIDER,
+  RIDER_ROOK_H = 1 << 0,
+  RIDER_ROOK_V = 1 << 1,
+  RIDER_CANNON_H = 1 << 2,
+  RIDER_CANNON_V = 1 << 3,
+  RIDER_HORSE = 1 << 4,
+  RIDER_ELEPHANT = 1 << 5,
+  HOPPING_RIDERS =  RIDER_CANNON_H | RIDER_CANNON_V,
+  LAME_LEAPERS = RIDER_HORSE | RIDER_ELEPHANT,
+  ASYMMETRICAL_RIDERS =  RIDER_HORSE,
+  NON_SLIDING_RIDERS = HOPPING_RIDERS | LAME_LEAPERS,
 };
 
 extern Value PieceValue[PHASE_NB][PIECE_NB];
@@ -442,7 +412,6 @@ enum : int {
 };
 
 enum Square : int {
-#ifdef LARGEBOARDS
   SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1, SQ_I1, SQ_J1, SQ_K1, SQ_L1,
   SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2, SQ_I2, SQ_J2, SQ_K2, SQ_L2,
   SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3, SQ_I3, SQ_J3, SQ_K3, SQ_L3,
@@ -453,37 +422,18 @@ enum Square : int {
   SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8, SQ_I8, SQ_J8, SQ_K8, SQ_L8,
   SQ_A9, SQ_B9, SQ_C9, SQ_D9, SQ_E9, SQ_F9, SQ_G9, SQ_H9, SQ_I9, SQ_J9, SQ_K9, SQ_L9,
   SQ_A10, SQ_B10, SQ_C10, SQ_D10, SQ_E10, SQ_F10, SQ_G10, SQ_H10, SQ_I10, SQ_J10, SQ_K10, SQ_L10,
-#else
-  SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1,
-  SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
-  SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
-  SQ_A4, SQ_B4, SQ_C4, SQ_D4, SQ_E4, SQ_F4, SQ_G4, SQ_H4,
-  SQ_A5, SQ_B5, SQ_C5, SQ_D5, SQ_E5, SQ_F5, SQ_G5, SQ_H5,
-  SQ_A6, SQ_B6, SQ_C6, SQ_D6, SQ_E6, SQ_F6, SQ_G6, SQ_H6,
-  SQ_A7, SQ_B7, SQ_C7, SQ_D7, SQ_E7, SQ_F7, SQ_G7, SQ_H7,
-  SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
-#endif
   SQ_NONE,
 
   SQUARE_ZERO = 0,
-#ifdef LARGEBOARDS
   SQUARE_NB = 120,
   SQUARE_BIT_MASK = 127,
-#else
-  SQUARE_NB = 64,
-  SQUARE_BIT_MASK = 63,
-#endif
   SQ_MAX = SQUARE_NB - 1,
   SQUARE_NB_CHESS = 64,
   SQUARE_NB_SHOGI = 81,
 };
 
 enum Direction : int {
-#ifdef LARGEBOARDS
   NORTH =  12,
-#else
-  NORTH =  8,
-#endif
   EAST  =  1,
   SOUTH = -NORTH,
   WEST  = -EAST,
@@ -495,21 +445,13 @@ enum Direction : int {
 };
 
 enum File : int {
-#ifdef LARGEBOARDS
   FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_I, FILE_J, FILE_K, FILE_L,
-#else
-  FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H,
-#endif
   FILE_NB,
   FILE_MAX = FILE_NB - 1
 };
 
 enum Rank : int {
-#ifdef LARGEBOARDS
   RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_9, RANK_10,
-#else
-  RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8,
-#endif
   RANK_NB,
   RANK_MAX = RANK_NB - 1
 };
@@ -651,10 +593,6 @@ constexpr Square flip_file(Square s, File maxFile = FILE_H) { // Swap A1 <-> H1
 
 constexpr Piece operator~(Piece pc) {
   return Piece(pc ^ PIECE_TYPE_NB);  // Swap color of piece B_KNIGHT <-> W_KNIGHT
-}
-
-constexpr CastlingRights operator&(Color c, CastlingRights cr) {
-  return CastlingRights((c == WHITE ? WHITE_CASTLING : BLACK_CASTLING) & cr);
 }
 
 constexpr Value mate_in(int ply) {

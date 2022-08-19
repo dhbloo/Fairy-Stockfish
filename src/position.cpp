@@ -178,13 +178,12 @@ namespace Stockfish {
         {
             if (isdigit(token))
             {
-#ifdef LARGEBOARDS
                 if (isdigit(ss.peek()))
                 {
                     sq += 10 * (token - '0') * EAST;
                     ss >> token;
                 }
-#endif
+
                 sq += (token - '0') * EAST; // Advance the given number of files
             }
 
@@ -224,48 +223,6 @@ namespace Stockfish {
 
         // 3-4. Skip parsing castling and en passant flags if not present
         st->epSquare = SQ_NONE;
-        st->castlingKingSquare[WHITE] = st->castlingKingSquare[BLACK] = SQ_NONE;
-        if (!isdigit(ss.peek()) && !sfen)
-        {
-            // 3. Castling availability. Compatible with 3 standards: Normal FEN standard,
-            // Shredder-FEN that uses the letters of the columns on which the rooks began
-            // the game instead of KQkq and also X-FEN standard that, in case of Chess960,
-            // if an inner rook is associated with the castling right, the castling tag is
-            // replaced by the file letter of the involved rook, as for the Shredder-FEN.
-            while ((ss >> token) && !isspace(token))
-            {
-                Square rsq;
-                Color c = islower(token) ? BLACK : WHITE;
-                Piece rook = make_piece(c, castling_rook_piece());
-
-                token = char(toupper(token));
-
-                if (token == 'K')
-                    for (rsq = make_square(FILE_MAX, castling_rank(c)); piece_on(rsq) != rook; --rsq) {}
-
-                else if (token == 'Q')
-                    for (rsq = make_square(FILE_A, castling_rank(c)); piece_on(rsq) != rook; ++rsq) {}
-
-                else if (token >= 'A' && token <= 'A' + max_file())
-                    rsq = make_square(File(token - 'A'), castling_rank(c));
-
-                else
-                    continue;
-
-                // Determine castling "king" position
-                if (castling_enabled() && st->castlingKingSquare[c] == SQ_NONE)
-                {
-                    Bitboard castlingKings = pieces(c, castling_king_piece()) & rank_bb(castling_rank(c));
-                    // Ambiguity resolution for 960 variants with more than one "king"
-                    // e.g., EAH means that an e-file king can castle with a- and h-file rooks
-                    st->castlingKingSquare[c] = castlingKings && (!more_than_one(castlingKings)) ? lsb(castlingKings)
-                        : make_square(castling_king_file(), castling_rank(c));
-                }
-
-                if (castling_enabled() && piece_on(rsq) == rook)
-                    set_castling_right(c, rsq);
-            }
-        }
 
         // Check counter for nCheck
         ss >> std::skipws >> token >> std::noskipws;
@@ -314,28 +271,6 @@ namespace Stockfish {
     }
 
 
-    /// Position::set_castling_right() is a helper function used to set castling
-    /// rights given the corresponding color and the rook starting square.
-
-    void Position::set_castling_right(Color c, Square rfrom) {
-
-        assert(st->castlingKingSquare[c] != SQ_NONE);
-        Square kfrom = st->castlingKingSquare[c];
-        CastlingRights cr = c & (kfrom < rfrom ? KING_SIDE : QUEEN_SIDE);
-
-        st->castlingRights |= cr;
-        castlingRightsMask[kfrom] |= cr;
-        castlingRightsMask[rfrom] |= cr;
-        castlingRookSquare[cr] = rfrom;
-
-        Square kto = make_square(cr & KING_SIDE ? castling_kingside_file() : castling_queenside_file(), castling_rank(c));
-        Square rto = kto + (cr & KING_SIDE ? WEST : EAST);
-
-        castlingPath[cr] = (between_bb(rfrom, rto) | between_bb(kfrom, kto))
-            & ~(kfrom | rfrom);
-    }
-
-
     /// Position::set_check_info() sets king attacks to detect if a move gives check
 
     void Position::set_check_info(StateInfo* si) const {
@@ -347,14 +282,14 @@ namespace Stockfish {
 
         // For unused piece types, the check squares are left uninitialized
         si->nonSlidingRiders = 0;
-        for (PieceType pt : piece_types())
+        for (PieceType pt : pieceTypes)
         {
             si->checkSquares[pt] = ksq != SQ_NONE ? attacks_bb(~sideToMove, pt, ksq, pieces()) : Bitboard(0);
             // Collect special piece types that require slower check and evasion detection
             if (AttackRiderTypes[pt] & NON_SLIDING_RIDERS)
                 si->nonSlidingRiders |= pieces(pt);
         }
-        si->shak = si->checkersBB & (byTypeBB[KNIGHT] | byTypeBB[ROOK] | byTypeBB[BERS]);
+        si->shak = si->checkersBB & byTypeBB[ROOK];
         si->chased = chased();
         si->legalCapture = NO_VALUE;
     }
@@ -474,8 +409,7 @@ namespace Stockfish {
         }
 
         ss << (sideToMove == WHITE ? " w " : " b ");
-        if (!can_castle(ANY_CASTLING))
-            ss << '-';
+        ss << '-';
 
         ss << (ep_square() == SQ_NONE ? " - " : " " + UCI::square(*this, ep_square()) + " ");
 
@@ -519,7 +453,6 @@ namespace Stockfish {
             }
         };
 
-        assert(piece_types().size() == 7);
         add_snipers(PieceType::ROOK);
         add_snipers(PieceType::FERS);
         add_snipers(PieceType::CANNON);
@@ -554,28 +487,19 @@ namespace Stockfish {
 
         Bitboard b = 0;
 
-        auto add_attacks = [&](PieceType pt) {
-            if (board_bb(c, pt) & s)
-            {
-                PieceType move_pt = pt == KING ? king_type() : pt;
-                // Consider asymmetrical moves (e.g., horse)
-                if (AttackRiderTypes[move_pt] & ASYMMETRICAL_RIDERS)
-                    b |= attacks_by_horse(s, occupied) & pieces(c, pt);
-                else
-                    b |= attacks_bb(~c, move_pt, s, occupied) & pieces(c, pt);
-            }
-        };
-
-        add_attacks(PieceType::ROOK);
-        add_attacks(PieceType::FERS);
-        add_attacks(PieceType::CANNON);
-        add_attacks(PieceType::SOLDIER);
-        add_attacks(PieceType::HORSE);
-        add_attacks(PieceType::ELEPHANT);
-        add_attacks(PieceType::KING);
+        b |= attacks_bb<ROOK>(s, occupied) & pieces(c, ROOK);
+        if (board_bb(c, FERS) & s)
+            b |= attacks_bb<FERS>(s, occupied) & pieces(c, FERS);
+        b |= attacks_bb<CANNON>(s, occupied) & pieces(c, CANNON);
+        b |= PseudoAttacks[~c][SOLDIER][s] & pieces(c, SOLDIER);
+         b |= attacks_by_horse(s, occupied) & pieces(c, HORSE);
+        if (board_bb(c, ELEPHANT) & s)
+            b |= attacks_bb<ELEPHANT>(s, occupied) & pieces(c, ELEPHANT);
+        if (board_bb(c, KING) & s)
+            b |= PseudoAttacks[~c][WAZIR][s] & pieces(c, KING);
 
         // Unpromoted soldiers
-        if (b & pieces(SOLDIER) && relative_rank(c, s, max_rank()) < var->soldierPromotionRank)
+        if (b & pieces(SOLDIER) && relative_rank(c, s, max_rank()) < RANK_6)
             b ^= b & pieces(SOLDIER) & ~PseudoAttacks[~c][SHOGI_PAWN][s];
 
         return b;
@@ -808,45 +732,6 @@ namespace Stockfish {
         }
         k ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
 
-        // Flip enclosed pieces
-        st->flippedPieces = 0;
-        if (flip_enclosed_pieces())
-        {
-            // Find end of rows to be flipped
-            if (flip_enclosed_pieces() == REVERSI)
-            {
-                Bitboard b = attacks_bb(us, QUEEN, to, board_bb() & ~pieces(~us)) & ~PseudoAttacks[us][KING][to] & pieces(us);
-                while (b)
-                    st->flippedPieces |= between_bb(pop_lsb(b), to) ^ to;
-            }
-            else
-            {
-                assert(flip_enclosed_pieces() == ATAXX);
-                st->flippedPieces = PseudoAttacks[us][KING][to] & pieces(~us);
-            }
-
-            // Flip pieces
-            Bitboard to_flip = st->flippedPieces;
-            while (to_flip)
-            {
-                Square s = pop_lsb(to_flip);
-                Piece flipped = piece_on(s);
-                Piece resulting = ~flipped;
-
-                // remove opponent's piece
-                remove_piece(s);
-                k ^= Zobrist::psq[flipped][s];
-                st->materialKey ^= Zobrist::psq[flipped][pieceCount[flipped]];
-                st->nonPawnMaterial[them] -= PieceValue[MG][flipped];
-
-                // add our piece
-                put_piece(resulting, s);
-                k ^= Zobrist::psq[resulting][s];
-                st->materialKey ^= Zobrist::psq[resulting][pieceCount[resulting] - 1];
-                st->nonPawnMaterial[us] += PieceValue[MG][resulting];
-            }
-        }
-
         // Move the piece.
         if (Eval::useNNUE)
         {
@@ -919,58 +804,11 @@ namespace Stockfish {
             put_piece(st->capturedPiece, capsq, st->capturedpromoted, st->unpromotedCapturedPiece); // Restore the captured piece
         }
 
-        if (flip_enclosed_pieces())
-        {
-            // Flip pieces
-            Bitboard to_flip = st->flippedPieces;
-            while (to_flip)
-            {
-                Square s = pop_lsb(to_flip);
-                Piece resulting = ~piece_on(s);
-                remove_piece(s);
-                put_piece(resulting, s);
-            }
-        }
-
         // Finally point our state pointer back to the previous state
         st = st->previous;
         --gamePly;
 
         assert(pos_is_ok());
-    }
-
-
-    /// Position::do_castling() is a helper used to do/undo a castling move. This
-    /// is a bit tricky in Chess960 where from/to squares can overlap.
-    template<bool Do>
-    void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto) {
-
-        bool kingSide = to > from;
-        rfrom = to; // Castling is encoded as "king captures friendly rook"
-        to = make_square(kingSide ? castling_kingside_file() : castling_queenside_file(), castling_rank(us));
-        rto = to + (kingSide ? WEST : EAST);
-
-        Piece castlingKingPiece = piece_on(Do ? from : to);
-        Piece castlingRookPiece = piece_on(Do ? rfrom : rto);
-
-        if (Do && Eval::useNNUE)
-        {
-            auto& dp = st->dirtyPiece;
-            dp.piece[0] = castlingKingPiece;
-            dp.from[0] = from;
-            dp.to[0] = to;
-            dp.piece[1] = castlingRookPiece;
-            dp.from[1] = rfrom;
-            dp.to[1] = rto;
-            dp.dirty_num = 2;
-        }
-
-        // Remove both pieces first since squares could overlap in Chess960
-        remove_piece(Do ? from : to);
-        remove_piece(Do ? rfrom : rto);
-        board[Do ? from : to] = board[Do ? rfrom : rto] = NO_PIECE; // Since remove_piece doesn't do it for us
-        put_piece(castlingKingPiece, Do ? to : from);
-        put_piece(castlingRookPiece, Do ? rto : rfrom);
     }
 
 
@@ -1057,13 +895,6 @@ namespace Stockfish {
             Bitboard attackers = attackers_to(to, pieces() ^ fromto, ~us);
             Value minAttacker = VALUE_INFINITE;
 
-            while (attackers)
-            {
-                Square s = pop_lsb(attackers);
-                if (extinction_piece_types().find(type_of(piece_on(s))) == extinction_piece_types().end())
-                    minAttacker = std::min(minAttacker, blast & s ? VALUE_ZERO : CapturePieceValue[MG][piece_on(s)]);
-            }
-
             if (minAttacker == VALUE_INFINITE)
                 return VALUE_ZERO;
 
@@ -1074,10 +905,6 @@ namespace Stockfish {
         while (blast)
         {
             Piece bpc = piece_on(pop_lsb(blast));
-            if (extinction_piece_types().find(type_of(bpc)) != extinction_piece_types().end())
-                return color_of(bpc) == us ? extinction_value()
-                : capture(m) ? -extinction_value()
-                : VALUE_ZERO;
             result += color_of(bpc) == us ? -CapturePieceValue[MG][bpc] : CapturePieceValue[MG][bpc];
         }
 
@@ -1094,15 +921,6 @@ namespace Stockfish {
         assert(is_ok(m));
 
         Square from = from_sq(m), to = to_sq(m);
-
-        // Extinction
-        if (extinction_value() != VALUE_NONE
-            && piece_on(to)
-            && ((extinction_piece_types().find(type_of(piece_on(to))) != extinction_piece_types().end()
-                && pieceCount[piece_on(to)] == extinction_piece_count() + 1)
-                || (extinction_piece_types().find(ALL_PIECES) != extinction_piece_types().end()
-                    && count<ALL_PIECES>(~sideToMove) == extinction_piece_count() + 1)))
-            return extinction_value() < VALUE_ZERO;
 
         int swap = PieceValue[MG][piece_on(to)] - threshold;
         if (swap < 0)
@@ -1144,49 +962,13 @@ namespace Stockfish {
 
             // Locate and remove the next least valuable attacker, and add to
             // the bitboard 'attackers' any X-ray attackers behind it.
-            if ((bb = stmAttackers & pieces(PAWN)))
-            {
-                if ((swap = PawnValueMg - swap) < res)
-                    break;
-
-                occupied ^= least_significant_square_bb(bb);
-                attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
-            }
-
-            else if ((bb = stmAttackers & pieces(KNIGHT)))
-            {
-                if ((swap = KnightValueMg - swap) < res)
-                    break;
-
-                occupied ^= least_significant_square_bb(bb);
-            }
-
-            else if ((bb = stmAttackers & pieces(BISHOP)))
-            {
-                if ((swap = BishopValueMg - swap) < res)
-                    break;
-
-                occupied ^= least_significant_square_bb(bb);
-                attackers |= attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN);
-            }
-
-            else if ((bb = stmAttackers & pieces(ROOK)))
+            if ((bb = stmAttackers & pieces(ROOK)))
             {
                 if ((swap = RookValueMg - swap) < res)
                     break;
 
                 occupied ^= least_significant_square_bb(bb);
-                attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK, QUEEN);
-            }
-
-            else if ((bb = stmAttackers & pieces(QUEEN)))
-            {
-                if ((swap = QueenValueMg - swap) < res)
-                    break;
-
-                occupied ^= least_significant_square_bb(bb);
-                attackers |= (attacks_bb<BISHOP>(to, occupied) & pieces(BISHOP, QUEEN))
-                    | (attacks_bb<ROOK  >(to, occupied) & pieces(ROOK, QUEEN));
+                attackers |= attacks_bb<ROOK>(to, occupied) & pieces(ROOK);
             }
 
             // fairy pieces
@@ -1238,12 +1020,11 @@ namespace Stockfish {
                     // Return a draw score if a position repeats once earlier but strictly
                     // after the root, or repeats twice before or at the root.
                     if (stp->key == st->key
-                        && ++cnt + 1 == (ply > i && !var->moveRepetitionIllegal ? 2 : n_fold_rule()))
+                        && ++cnt + 1 == (ply > i ? 2 : n_fold_rule()))
                     {
                         result = convert_mate_value((perpetualThem || perpetualUs) ? (!perpetualUs ? VALUE_MATE : !perpetualThem ? -VALUE_MATE : VALUE_DRAW)
                             : (chaseThem || chaseUs) ? (!chaseUs ? VALUE_MATE : !chaseThem ? -VALUE_MATE : VALUE_DRAW)
-                            : var->nFoldValueAbsolute && sideToMove == BLACK ? -var->nFoldValue
-                            : var->nFoldValue, ply);
+                            : VALUE_DRAW, ply);
                         return true;
                     }
 
@@ -1264,37 +1045,6 @@ namespace Stockfish {
     /// It does not not detect stalemates.
 
     bool Position::is_immediate_game_end(Value& result, int ply) const {
-
-        // Extinction
-        // Extinction does not apply for pseudo-royal pieces, because they can not be captured
-        if (extinction_value() != VALUE_NONE)
-        {
-            for (Color c : { ~sideToMove, sideToMove })
-                for (PieceType pt : extinction_piece_types())
-                    if (count_with_hand(c, pt) <= var->extinctionPieceCount
-                        && count_with_hand(~c, pt) >= var->extinctionOpponentPieceCount + (extinction_claim() && c == sideToMove))
-                    {
-                        result = c == sideToMove ? extinction_value(ply) : -extinction_value(ply);
-                        return true;
-                    }
-        }
-        // Connect-n
-        if (connect_n() > 0)
-        {
-            Bitboard b;
-            for (Direction d : {NORTH, NORTH_EAST, EAST, SOUTH_EAST})
-            {
-                b = pieces(~sideToMove);
-                for (int i = 1; i < connect_n() && b; i++)
-                    b &= shift(d, b);
-                if (b)
-                {
-                    result = mated_in(ply);
-                    return true;
-                }
-            }
-        }
-
         return false;
     }
 
@@ -1483,9 +1233,7 @@ namespace Stockfish {
 
         if ((sideToMove != WHITE && sideToMove != BLACK)
             || (count<KING>(WHITE) && piece_on(square<KING>(WHITE)) != make_piece(WHITE, KING))
-            || (count<KING>(BLACK) && piece_on(square<KING>(BLACK)) != make_piece(BLACK, KING))
-            || (ep_square() != SQ_NONE
-                && relative_rank(~sideToMove, ep_square(), max_rank()) > Rank(double_step_rank_max() + 1)))
+            || (count<KING>(BLACK) && piece_on(square<KING>(BLACK)) != make_piece(BLACK, KING)))
             assert(0 && "pos_is_ok: Default");
 
         if (Fast)
@@ -1524,18 +1272,6 @@ namespace Stockfish {
                 if (pieceCount[pc] != popcount(pieces(c, pt))
                     || pieceCount[pc] != std::count(board, board + SQUARE_NB, pc))
                     assert(0 && "pos_is_ok: Pieces");
-            }
-
-        for (Color c : { WHITE, BLACK })
-            for (CastlingRights cr : {c& KING_SIDE, c& QUEEN_SIDE})
-            {
-                if (!can_castle(cr))
-                    continue;
-
-                if (piece_on(castlingRookSquare[cr]) != make_piece(c, castling_rook_piece())
-                    || castlingRightsMask[castlingRookSquare[cr]] != cr
-                    || (count<KING>(c) && (castlingRightsMask[square<KING>(c)] & cr) != cr))
-                    assert(0 && "pos_is_ok: Castling");
             }
 
         return true;

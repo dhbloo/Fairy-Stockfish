@@ -57,7 +57,7 @@ namespace {
 
     if (token == "startpos")
     {
-        fen = variants.find(Options["UCI_Variant"])->second->startFen;
+        fen = variants.find("xiangqi")->second->startFen;
         is >> token; // Consume "moves" token if any
     }
     else if (token == "fen" || token == "sfen")
@@ -67,7 +67,7 @@ namespace {
         return;
 
     states = StateListPtr(new std::deque<StateInfo>(1)); // Drop old and create a new one
-    pos.set(variants.find(Options["UCI_Variant"])->second, fen, &states->back(), Threads.main(), sfen);
+    pos.set(variants.find("xiangqi")->second, fen, &states->back(), Threads.main(), sfen);
 
     // Parse move list (if any)
     while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
@@ -235,48 +235,6 @@ namespace {
      return int(0.5 + 1000 / (1 + std::exp((a - x) / b)));
   }
 
-  // load() is called when engine receives the "load" or "check" command.
-  // The function reads variant configuration files.
-
-  void load(istringstream& is, bool check = false) {
-
-    string token;
-    std::getline(is >> std::ws, token);
-
-    // The argument to load either is a here-doc or a file path
-    if (token.rfind("<<", 0) == 0)
-    {
-        // Trim the EOF marker
-        if (!(stringstream(token.substr(2)) >> token))
-            token = "";
-
-        // Parse variant config till EOF marker
-        stringstream ss;
-        std::string line;
-        while (std::getline(cin, line) && line != token)
-            ss << line << std::endl;
-        if (check)
-            variants.parse_istream<true>(ss);
-        else
-        {
-            variants.parse_istream<false>(ss);
-            Options["UCI_Variant"].set_combo(variants.get_keys());
-        }
-    }
-    else
-    {
-        // store path if non-empty after trimming
-        std::size_t end = token.find_last_not_of(' ');
-        if (end != std::string::npos)
-        {
-            if (check)
-                variants.parse<true>(token.erase(end + 1));
-            else
-                Options["VariantPath"] = token.erase(end + 1);
-        }
-    }
-  }
-
 } // namespace
 
 
@@ -293,26 +251,13 @@ void UCI::loop(int argc, char* argv[]) {
   StateListPtr states(new std::deque<StateInfo>(1));
 
   Options["UCI_Variant"].set_default("xiangqi");
-  assert(variants.find(Options["UCI_Variant"])->second != nullptr);
-  pos.set(variants.find(Options["UCI_Variant"])->second, variants.find(Options["UCI_Variant"])->second->startFen, &states->back(), Threads.main());
+  assert(variants.find("xiangqi")->second != nullptr);
+  pos.set(variants.find("xiangqi")->second, variants.find("xiangqi")->second->startFen, &states->back(), Threads.main());
 
   for (int i = 1; i < argc; ++i)
       cmd += std::string(argv[i]) + " ";
   // UCCI banmoves state
   std::vector<Move> banmoves = {};
-
-  if (argc > 1 && (std::strcmp(argv[1], "noautoload") == 0))
-  {
-      cmd = "";
-      argc = 1;
-  }
-  else if (argc == 1 || !(std::strcmp(argv[1], "load") == 0))
-  {
-      // Check environment for variants.ini file
-      char *envVariantPath = std::getenv("FAIRY_STOCKFISH_VARIANT_PATH");
-      if (envVariantPath != NULL)
-          Options["VariantPath"] = std::string(envVariantPath);
-  }
 
   do {
       if (argc == 1 && !getline(cin, cmd)) // Block here waiting for input or EOF
@@ -367,18 +312,9 @@ void UCI::loop(int argc, char* argv[]) {
               filename = f;
           Eval::NNUE::save_eval(filename);
       }
-      else if (token == "load")     { load(is); argc = 1; } // continue reading stdin
-      else if (token == "check")    load(is, true);
       // UCI-Cyclone omits the "position" keyword
       else if (token == "fen" || token == "startpos")
       {
-#ifdef LARGEBOARDS
-          if (CurrentProtocol == UCI_GENERAL && Options["UCI_Variant"] == "chess")
-          {
-              CurrentProtocol = UCI_CYCLONE;
-              Options["UCI_Variant"].set_default("xiangqi");
-          }
-#endif
           is.seekg(0);
           position(pos, is, states);
       }
@@ -430,16 +366,12 @@ string UCI::wdl(Value v, int ply) {
 /// UCI::square() converts a Square to a string in algebraic notation (g1, a7, etc.)
 
 std::string UCI::square(const Position& pos, Square s) {
-#ifdef LARGEBOARDS
   if (pos.max_rank() == RANK_10 && CurrentProtocol != UCI_GENERAL)
       return std::string{ char('a' + file_of(s)), char('0' + rank_of(s)) };
   else
       return rank_of(s) < RANK_10 ? std::string{ char('a' + file_of(s)), char('1' + (rank_of(s) % 10)) }
                                   : std::string{ char('a' + file_of(s)), char('0' + ((rank_of(s) + 1) / 10)),
                                                  char('0' + ((rank_of(s) + 1) % 10)) };
-#else
-  return std::string{ char('a' + file_of(s)), char('1' + rank_of(s)) };
-#endif
 }
 
 

@@ -154,9 +154,8 @@ string engine_info(bool to_uci) {
       ss << setw(2) << day << setw(2) << (1 + months.find(month) / 4) << year.substr(2);
   }
 
-#ifdef LARGEBOARDS
   ss << " LB";
-#endif
+
   if(to_uci){
   ss << "\nid author Fabian Fichter\ninfo string 权重分布式训练群: 755655813";
   }else{

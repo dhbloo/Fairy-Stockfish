@@ -402,7 +402,7 @@ PyMODINIT_FUNC PyInit_pyffish() {
     pieceMap.init();
     variants.init();
     UCI::init(Options);
-    PSQT::init(variants.find(Options["UCI_Variant"])->second);
+    PSQT::init(variants.find("xiangqi")->second);
     Bitboards::init();
     Position::init();
     Bitbases::init();

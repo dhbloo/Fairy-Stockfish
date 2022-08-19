@@ -171,8 +171,7 @@ namespace {
         // Score this pawn
         if (support | phalanx)
         {
-            int v =  Connected[r] * (2 + bool(phalanx) - bool(opposed)) * (r == RANK_2 && pos.captures_to_hand() ? 3 : 1)
-                   + 22 * popcount(support);
+            int v =  Connected[r] * (2 + bool(phalanx) - bool(opposed)) + 22 * popcount(support);
             if (pos.count<PAWN>(Us) > popcount(pos.board_bb()) / 4)
                 v = popcount(support | phalanx) * HordeConnected[bool(opposed)][r];
 
@@ -259,7 +258,7 @@ Score Entry::evaluate_shelter(const Position& pos, Square ksq) const {
       int theirRank = b ? relative_rank(Us, frontmost_sq(Them, b), pos.max_rank()) : 0;
 
       int d = std::min(File(edge_distance(f, pos.max_file())), FILE_D);
-      bonus += make_score(ShelterStrength[d][ourRank], 0) * (1 + (pos.captures_to_hand() && ourRank <= RANK_2));
+      bonus += make_score(ShelterStrength[d][ourRank], 0);
 
       if (ourRank && (ourRank == theirRank - 1))
           bonus -= BlockedStorm[theirRank];

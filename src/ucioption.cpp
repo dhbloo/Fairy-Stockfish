@@ -63,15 +63,6 @@ void on_tb_path(const Option& o) { Tablebases::init(o); }
 void on_use_NNUE(const Option& ) { Eval::NNUE::init(); }
 void on_eval_file(const Option& ) { Eval::NNUE::init(); }
 
-void on_variant_path(const Option& o) {
-    std::stringstream ss((std::string)o);
-    std::string path;
-
-    while (std::getline(ss, path, SepChar))
-        variants.parse<false>(path);
-
-    Options["UCI_Variant"].set_combo(variants.get_keys());
-}
 void on_variant_set(const Option &o) {
     // Re-initialize NNUE
     Eval::NNUE::init();
@@ -88,7 +79,7 @@ void on_variant_change(const Option &o) {
     // Do not send setup command for known variants
     if (standard_variants.find(o) != standard_variants.end())
         return;
-    int pocketsize = v->pieceDrops ? (v->pocketSize ? v->pocketSize : v->pieceTypes.size()) : 0;
+    int pocketsize = 0;
     sync_cout << "info string variant " << (std::string)o
             << " files " << v->maxFile + 1
             << " ranks " << v->maxRank + 1
@@ -135,7 +126,6 @@ void init(OptionsMap& o) {
 #else
   o["EvalFile"]              << Option("xiangqi-xy.nnue", on_eval_file);
 #endif
-  o["VariantPath"]           << Option("<empty>", on_variant_path);
   o["usemillisec"]           << Option(true); // time unit for UCCI
 }
 
