@@ -275,10 +275,10 @@ namespace Stockfish {
 
     void Position::set_check_info(StateInfo* si) const {
 
-        si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), count<KING>(WHITE) ? square<KING>(WHITE) : SQ_NONE, si->pinners[BLACK], BLACK);
-        si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), count<KING>(BLACK) ? square<KING>(BLACK) : SQ_NONE, si->pinners[WHITE], WHITE);
+        si->blockersForKing[WHITE] = slider_blockers(pieces(BLACK), square<KING>(WHITE), si->pinners[BLACK], BLACK);
+        si->blockersForKing[BLACK] = slider_blockers(pieces(WHITE), square<KING>(BLACK), si->pinners[WHITE], WHITE);
 
-        Square ksq = count<KING>(~sideToMove) ? square<KING>(~sideToMove) : SQ_NONE;
+        Square ksq = square<KING>(~sideToMove);
 
         // For unused piece types, the check squares are left uninitialized
         si->nonSlidingRiders = 0;
@@ -305,7 +305,7 @@ namespace Stockfish {
         si->key = si->materialKey = 0;
         si->pawnKey = Zobrist::noPawns;
         si->nonPawnMaterial[WHITE] = si->nonPawnMaterial[BLACK] = VALUE_ZERO;
-        si->checkersBB = count<KING>(sideToMove) ? attackers_to(square<KING>(sideToMove), ~sideToMove) : Bitboard(0);
+        si->checkersBB = attackers_to(square<KING>(sideToMove), ~sideToMove);
         si->move = MOVE_NONE;
 
         set_check_info(si);
@@ -535,28 +535,20 @@ namespace Stockfish {
         Square to = to_sq(m);
 
         assert(color_of(moved_piece(m)) == us);
-        assert(!count<KING>(us) || piece_on(square<KING>(us)) == make_piece(us, KING));
+        assert(piece_on(square<KING>(us)) == make_piece(us, KING));
         assert(board_bb() & to);
 
         Bitboard occupied = (pieces() ^ from) | to;
 
         // Flying general rule
-        // In case of bikjang passing is always allowed, even when in check
-        if (count<KING>(us))
-        {
-            Square s = type_of(moved_piece(m)) == KING ? to : square<KING>(us);
-            if (attacks_bb(~us, ROOK, s, occupied) & pieces(~us, KING) & ~square_bb(to))
-                return false;
-        }
+        Square s = type_of(moved_piece(m)) == KING ? to : square<KING>(us);
+        if (attacks_bb(~us, ROOK, s, occupied) & pieces(~us, KING) & ~square_bb(to))
+            return false;
 
         // If the moving piece is a king, check whether the destination square is
         // attacked by the opponent.
         if (type_of(moved_piece(m)) == KING)
             return !attackers_to(to, occupied, ~us);
-
-        // Return early when without king
-        if (!count<KING>(us))
-            return true;
 
         // A non-king move is legal if the king is not under attack after the move.
         return !(attackers_to(square<KING>(us), occupied, ~us) & ~SquareBB[to]);
@@ -626,10 +618,6 @@ namespace Stockfish {
 
         Square from = from_sq(m);
         Square to = to_sq(m);
-
-        // No check possible without king
-        if (!count<KING>(~sideToMove))
-            return false;
 
         // Is there a direct check?
         PieceType pt = type_of(moved_piece(m));
@@ -1232,8 +1220,8 @@ namespace Stockfish {
         constexpr bool Fast = true; // Quick (default) or full check?
 
         if ((sideToMove != WHITE && sideToMove != BLACK)
-            || (count<KING>(WHITE) && piece_on(square<KING>(WHITE)) != make_piece(WHITE, KING))
-            || (count<KING>(BLACK) && piece_on(square<KING>(BLACK)) != make_piece(BLACK, KING)))
+            || (piece_on(square<KING>(WHITE)) != make_piece(WHITE, KING))
+            || (piece_on(square<KING>(BLACK)) != make_piece(BLACK, KING)))
             assert(0 && "pos_is_ok: Default");
 
         if (Fast)
