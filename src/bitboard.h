@@ -423,15 +423,6 @@ inline Bitboard attacks_bb(Square s, Bitboard occupied) {
   return PseudoAttacks[WHITE][Pt][s];
 }
 
-/// pop_rider() finds and clears a rider in a (hybrid) rider type
-
-inline RiderType pop_rider(RiderType* r) {
-  assert(*r);
-  const RiderType r2 = *r & ~(*r - 1);
-  *r &= *r - 1;
-  return r2;
-}
-
 inline Bitboard attacks_bb(Color c, PieceType pt, Square s, Bitboard occupied) {
   switch (pt) {
   case ROOK:
@@ -451,10 +442,23 @@ inline Bitboard attacks_bb(Color c, PieceType pt, Square s, Bitboard occupied) {
 
 
 inline Bitboard moves_bb(Color c, PieceType pt, Square s, Bitboard occupied) {
-  Bitboard b = LeaperMoves[c][pt][s];
-  RiderType r = MoveRiderTypes[pt];
-  while (r)
-      b |= rider_attacks_bb(pop_rider(&r), s, occupied);
+  Bitboard b;
+  switch (pt) {
+  case ROOK:
+  case CANNON:
+      b = rider_attacks_bb<RIDER_ROOK_H>(s, occupied)
+        | rider_attacks_bb<RIDER_ROOK_V>(s, occupied);
+      break;
+  case HORSE:
+      b = rider_attacks_bb<RIDER_HORSE>(s, occupied);
+      break;
+  case ELEPHANT:
+      b = rider_attacks_bb<RIDER_ELEPHANT>(s, occupied);
+      break;
+  default:
+      b = LeaperMoves[c][pt][s];
+      break;
+  }
   return b & PseudoMoves[c][pt][s];
 }
 
