@@ -30,8 +30,29 @@
 #include "piece.h"
 #include "variant.h"
 
+#include "tune.h"
 
 using namespace Stockfish;
+
+
+extern Value Stockfish::PieceValue[PHASE_NB][PIECE_NB];
+
+
+void post_tune_update() {
+	PSQT::init(variants.find("xiangqi")->second);
+}
+
+
+TUNE(SetDefaultRange, 
+	PieceValue[MG][ROOK], PieceValue[EG][ROOK],
+	PieceValue[MG][FERS], PieceValue[EG][FERS],
+	PieceValue[MG][CANNON], PieceValue[EG][CANNON],
+	PieceValue[MG][SOLDIER], PieceValue[EG][SOLDIER],
+	PieceValue[MG][HORSE], PieceValue[EG][HORSE],
+	PieceValue[MG][ELEPHANT], PieceValue[EG][ELEPHANT],
+	post_tune_update);
+
+
 
 int main(int argc, char* argv[]) {
 

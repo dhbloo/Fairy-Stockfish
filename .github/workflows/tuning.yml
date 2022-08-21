@@ -1,0 +1,29 @@
+name: Linux
+
+on:
+  push:
+    branches: [ tune ]
+
+jobs:
+  linux:
+    strategy:
+      matrix:
+        arch: ["x86-64-bmi2"]
+    runs-on: ubuntu-18.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: make
+        run: cd src && make clean && make -j build COMP=gcc ARCH=${{ matrix.arch }} EXE=${{ matrix.arch }} largeboards=yes && strip ${{ matrix.arch }}
+
+      - uses: crazy-max/ghaction-upx@v2
+        with:
+          files: src/x86-64-bmi2
+          args: -fq --best
+
+      - name: upload to fishtest
+        run: curl http://test.stockfishxq.com/api/pre_upload -F file=@src/x86-64-bmi2 -F "file_type=engine" -F "password=${{ secrets.NOTHING }}"
+
+      - name: print variables table
+        run: printf 'quit' | src/x86-64-bmi2
