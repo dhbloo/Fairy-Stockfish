@@ -1,8 +1,8 @@
-name: 64Buckets - Windows
+name: 32Buckets - Windows
 
 on:	
   push:	
-    branches: [ motto-buckets ]	
+    branches: [ large-buckets ]	
 
 jobs:	
   windows:	

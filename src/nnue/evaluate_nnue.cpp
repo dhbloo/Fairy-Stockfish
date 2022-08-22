@@ -158,10 +158,7 @@ namespace Stockfish::Eval::NNUE {
     ASSERT_ALIGNED(transformedFeatures, alignment);
     ASSERT_ALIGNED(buffer, alignment);
 
-    int selfPieceCount = popcount(pos.pieces() & HomeHalf[pos.side_to_move()]);
-    int oppPieceCount = pos.count<ALL_PIECES>() - selfPieceCount;
-
-    const std::size_t bucket = (((selfPieceCount - 1) / 4) * 8 + (oppPieceCount - 1) / 4);
+    const std::size_t bucket = pos.count<ALL_PIECES>() - 1;
     const auto psqt = featureTransformer->transform(pos, transformedFeatures, bucket);
     const auto positional = network[bucket]->propagate(transformedFeatures, buffer)[0];
 
@@ -202,12 +199,7 @@ namespace Stockfish::Eval::NNUE {
     ASSERT_ALIGNED(buffer, alignment);
 
     NnueEvalTrace t{};
-    int selfPieceCount = popcount(pos.pieces() & HomeHalf[pos.side_to_move()]);
-    int oppPieceCount = pos.count<ALL_PIECES>() - selfPieceCount;
-    t.correctBucket = (((selfPieceCount - 1) / 4) * 8 + (oppPieceCount - 1) / 4);
-    std::cout << " Piece Count Information : "
-                  << "   self_piece_count : " << selfPieceCount << "\n"
-                  << "   opp_piece_count : " << oppPieceCount << "\n\n";
+    t.correctBucket = std::min((pos.count<ALL_PIECES>() - 1) * 8 / currentNnueVariant->nnueMaxPieces, 7);
     for (std::size_t bucket = 0; bucket < LayerStacks; ++bucket) {
       const auto psqt = featureTransformer->transform(pos, transformedFeatures, bucket);
       const auto output = network[bucket]->propagate(transformedFeatures, buffer);
