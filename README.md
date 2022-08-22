@@ -1,5 +1,13 @@
 # Fairy-Stockfish
 
+## 特殊声明（Special Term of Use）
+鉴于近期出现的种种不友好的行为，以下个人和组织将被禁止使用由本程序引申出的所有 nnue 权重文件（The following individuals and organizations are prohibited from using the nnue weights file derived from this program due to their unfriendly actions, activities, and license violations）：
++ 国圣
++ 飞风追云
++ 静香
+
+同时再次强调，根据GPLv3协议，所以基于本程序的修改在做软件分发时需要公开源代码，或者指出能编译对应发行版的源代码，否则都是违反GPLv3协议的行为。我们所有的引擎发行版可执行文件都可以找到对应的源码，不存在所谓的闭源行为。（for engish version, see the Term of Use in the end of this README.md）
+
 ## Overview
 
 [![Build Status](https://github.com/ianfab/Fairy-Stockfish/workflows/Release/badge.svg?branch=master)](https://github.com/ianfab/Fairy-Stockfish/actions?query=workflow%3ARelease)
