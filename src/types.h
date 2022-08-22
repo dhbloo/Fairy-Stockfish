@@ -1,17 +1,14 @@
 /*
   Stockfish, a UCI chess playing engine derived from Glaurung 2.1
   Copyright (C) 2004-2022 The Stockfish developers (see AUTHORS file)
-
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-
   Stockfish is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -310,9 +307,9 @@ enum Value : int {
   PawnValueMg   = 126,   PawnValueEg   = 208,
   KnightValueMg = 781,   KnightValueEg = 854,
   BishopValueMg = 825,   BishopValueEg = 915,
-  RookValueMg   = 1276,  RookValueEg   = 1380,
+  RookValueMg   = 1273,  RookValueEg   = 1416,
   QueenValueMg  = 2538,  QueenValueEg  = 2682,
-  FersValueMg              = 420,   FersValueEg              = 450,
+  FersValueMg              = 425,   FersValueEg              = 452,
   AlfilValueMg             = 350,   AlfilValueEg             = 330,
   FersAlfilValueMg         = 700,   FersAlfilValueEg         = 650,
   SilverValueMg            = 660,   SilverValueEg            = 640,
@@ -333,11 +330,11 @@ enum Value : int {
   ClobberPieceValueMg      = 300,   ClobberPieceValueEg      = 300,
   BreakthroughPieceValueMg = 300,   BreakthroughPieceValueEg = 300,
   ImmobilePieceValueMg     = 50,    ImmobilePieceValueEg     = 50,
-  CannonPieceValueMg       = 800,   CannonPieceValueEg       = 700,
+  CannonPieceValueMg       = 808,   CannonPieceValueEg       = 706,
   JanggiCannonPieceValueMg = 800,   JanggiCannonPieceValueEg = 600,
-  SoldierValueMg           = 200,   SoldierValueEg           = 270,
-  HorseValueMg             = 540,   HorseValueEg             = 800,
-  ElephantValueMg          = 300,   ElephantValueEg          = 300,
+  SoldierValueMg           = 205,   SoldierValueEg           = 270,
+  HorseValueMg             = 538,   HorseValueEg             = 807,
+  ElephantValueMg          = 301,   ElephantValueEg          = 298,
   JanggiElephantValueMg    = 340,   JanggiElephantValueEg    = 350,
   BannerValueMg            = 3400,  BannerValueEg            = 3500,
   WazirValueMg             = 400,   WazirValueEg             = 350,
