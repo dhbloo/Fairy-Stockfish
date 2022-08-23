@@ -99,7 +99,7 @@ namespace Material {
 Entry* probe(const Position& pos) {
 
   Key key = pos.material_key();
-  Entry* e = pos.this_thread()->materialTable[key];
+  Entry* e = nullptr;
 
   if (e->key == key)
       return e;

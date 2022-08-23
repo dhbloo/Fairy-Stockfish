@@ -712,9 +712,6 @@ namespace Stockfish {
             // Update material hash key and prefetch access to materialTable
             k ^= Zobrist::psq[captured][capsq];
             st->materialKey ^= Zobrist::psq[captured][pieceCount[captured]];
-#ifndef NO_THREADS
-            prefetch(thisThread->materialTable[st->materialKey]);
-#endif
             // Reset rule 50 counter
             st->rule50 = 0;
         }

@@ -220,7 +220,7 @@ namespace Pawns {
 Entry* probe(const Position& pos) {
 
   Key key = pos.pawn_key();
-  Entry* e = pos.this_thread()->pawnsTable[key];
+  Entry* e = nullptr;
 
   if (e->key == key && !pos.pieces(SHOGI_PAWN))
       return e;
