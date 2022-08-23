@@ -345,7 +345,8 @@ namespace Stockfish {
                 if (rootDepth >= 4)
                 {
                     Value prev = rootMoves[pvIdx].averageScore;
-                    delta = Value(14) + int(prev) * prev / 18720;
+                    delta = Value(16) + int(prev) * prev / 19178;
+                    // delta = Value(14) + int(prev) * prev / 18720;
                     alpha = std::max(prev - delta, -VALUE_INFINITE);
                     beta = std::min(prev + delta, VALUE_INFINITE);
 
