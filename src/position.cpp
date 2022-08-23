@@ -712,9 +712,6 @@ namespace Stockfish {
             // Update material hash key and prefetch access to materialTable
             k ^= Zobrist::psq[captured][capsq];
             st->materialKey ^= Zobrist::psq[captured][pieceCount[captured]];
-#ifndef NO_THREADS
-            prefetch(thisThread->materialTable[st->materialKey]);
-#endif
             // Reset rule 50 counter
             st->rule50 = 0;
         }
@@ -952,7 +949,7 @@ namespace Stockfish {
             // the bitboard 'attackers' any X-ray attackers behind it.
             if ((bb = stmAttackers & pieces(ROOK)))
             {
-                if ((swap = RookValueMg - swap) < res)
+                if ((swap = PieceValue[MG][ROOK]- swap) < res)
                     break;
 
                 occupied ^= least_significant_square_bb(bb);
