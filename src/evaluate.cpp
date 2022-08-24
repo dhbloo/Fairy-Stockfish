@@ -61,7 +61,6 @@ const Variant* currentNnueVariant;
 
 namespace Eval {
 
-  bool useNNUE;
   string eval_file_loaded = "None";
 
   /// NNUE::init() tries to load a NNUE network at startup time, or when the engine
@@ -74,28 +73,24 @@ namespace Eval {
 
   void NNUE::init() {
 
-    useNNUE = Options["Use NNUE"];
-    if (!useNNUE)
-        return;
-
     string eval_file = string(Options["EvalFile"]);
 
     // Restrict NNUE usage to corresponding variant
     // Support multiple variant networks separated by semicolon(Windows)/colon(Unix)
     stringstream ss(eval_file);
     string variant = string("xiangqi");
-    useNNUE = false;
+    bool foundNNUE = false;
     while (getline(ss, eval_file, UCI::SepChar))
     {
         string basename = eval_file.substr(eval_file.find_last_of("\\/") + 1);
         string nnueAlias = variants.find(variant)->second->nnueAlias;
         if (basename.rfind(variant, 0) != string::npos || (!nnueAlias.empty() && basename.rfind(nnueAlias, 0) != string::npos))
         {
-            useNNUE = true;
+            foundNNUE = true;
             break;
         }
     }
-    if (!useNNUE)
+    if (!foundNNUE)
         return;
 
     currentNnueVariant = variants.find(variant)->second;
@@ -140,15 +135,15 @@ namespace Eval {
 
     string eval_file = string(Options["EvalFile"]);
 
-    if (useNNUE && eval_file.find(eval_file_loaded) == string::npos)
+    if (eval_file.find(eval_file_loaded) == string::npos)
     {
         UCI::OptionsMap defaults;
         UCI::init(defaults);
 
-        string msg1 = "If the UCI option \"Use NNUE\" is set to true, network evaluation parameters compatible with the engine must be available.";
-        string msg2 = "The option is set to true, but the network file " + eval_file + " was not loaded successfully.";
+        string msg1 = "Network evaluation parameters compatible with the engine must be available.";
+        string msg2 = "The network file " + eval_file + " was not loaded successfully.";
         string msg3 = "The UCI option EvalFile might need to specify the full path, including the directory name, to the network file.";
-        string msg4 = "The default net can be downloaded from: https://tests.stockfishchess.org/api/nn/" + string(defaults["EvalFile"]);
+        string msg4 = "The default net can be downloaded from QQ group: 755655813.";
         string msg5 = "The engine will be terminated now.";
 
         sync_cout << "info string ERROR: " << msg1 << sync_endl;
@@ -160,10 +155,7 @@ namespace Eval {
         exit(EXIT_FAILURE);
     }
 
-    if (useNNUE)
-        sync_cout << "info string NNUE evaluation using " << eval_file_loaded << " enabled" << sync_endl;
-    else
-        sync_cout << "info string classical evaluation enabled" << sync_endl;
+    sync_cout << "info string NNUE evaluation using " << eval_file_loaded << " enabled" << sync_endl;
   }
 }
 
@@ -265,7 +257,7 @@ std::string Eval::trace(Position& pos) {
   v = evaluate(pos);
   v = pos.side_to_move() == WHITE ? v : -v;
   ss << "Final evaluation       " << to_cp(v) << " (white side)";
-  if (Eval::useNNUE && pos.nnue_applicable())
+  if (pos.nnue_applicable())
      ss << " [with scaled NNUE, hybrid, ...]";
   ss << "\n";
 

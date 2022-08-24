@@ -693,21 +693,17 @@ namespace Stockfish {
             // update non-pawn material.
             st->nonPawnMaterial[them] -= PieceValue[MG][captured];
 
-            if (Eval::useNNUE)
-            {
-                dp.dirty_num = 2;  // 1 piece moved, 1 piece captured
-                dp.piece[1] = captured;
-                dp.from[1] = capsq;
-                dp.to[1] = SQ_NONE;
-            }
+            dp.dirty_num = 2;  // 1 piece moved, 1 piece captured
+            dp.piece[1] = captured;
+            dp.from[1] = capsq;
+            dp.to[1] = SQ_NONE;
 
             // Update board and piece lists
             bool capturedPromoted = is_promoted(capsq);
             Piece unpromotedCaptured = unpromoted_piece_on(capsq);
             remove_piece(capsq);
 
-            if (Eval::useNNUE)
-                dp.handPiece[1] = NO_PIECE;
+            dp.handPiece[1] = NO_PIECE;
 
             // Update material hash key and prefetch access to materialTable
             k ^= Zobrist::psq[captured][capsq];
@@ -718,12 +714,9 @@ namespace Stockfish {
         k ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
 
         // Move the piece.
-        if (Eval::useNNUE)
-        {
-            dp.piece[0] = pc;
-            dp.from[0] = from;
-            dp.to[0] = to;
-        }
+        dp.piece[0] = pc;
+        dp.from[0] = from;
+        dp.to[0] = to;
 
         move_piece(from, to);
 
