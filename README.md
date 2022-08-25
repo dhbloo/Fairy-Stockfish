@@ -6,7 +6,7 @@
 + 飞风追云
 + 静香
 
-同时再次强调，根据GPLv3协议，所以基于本程序的修改在做软件分发时需要公开源代码，或者指出能编译对应发行版的源代码，否则都是违反GPLv3协议的行为。我们所有的引擎发行版可执行文件都可以找到对应的源码，不存在所谓的闭源行为。（for engish version, see the Term of Use in the end of this README.md）
+同时再次强调，根据GPLv3协议，所以基于本程序的修改在做软件分发时需要公开源代码，或者指出能编译对应发行版的源代码，否则都是违反GPLv3协议的行为。我们所有的引擎发行版可执行文件都可以找到对应的源码，不存在所谓的闭源行为。（for English version, see the Term of Use in the end of this README.md）
 
 ## Overview
 
